@@ -25,21 +25,21 @@ async function signup(req, res) {
     const existingUser = await User.findOne({ email })
     if (existingUser) throw new Error('Account already exists')
 
-    // ✅ Create profile with controlled fields
+    // Create profile with controlled fields
     const newProfile = await Profile.create({
       name,
       email,
       authorizationLevel,
     })
 
-    // ✅ Attach profile to user
+    // Attach profile to user
     const newUser = await User.create({
       email,
       password,
       profile: newProfile._id,
     })
 
-    const token = createJWT(newUser)
+    const token = createJWT(newUser, newProfile)
     res.status(200).json({ token })
 
   } catch (err) {
@@ -71,7 +71,8 @@ async function login(req, res) {
     const isMatch = await user.comparePassword(req.body.password)
     if (!isMatch) throw new Error('Incorrect password')
 
-    const token = createJWT(user)
+    const profile = await Profile.findById(user.profile)
+    const token = createJWT(user, profile)
     res.json({ token })
   } catch (err) {
     handleAuthError(err, res)
@@ -89,7 +90,8 @@ async function changePassword(req, res) {
     user.password = req.body.newPassword
     await user.save()
 
-    const token = createJWT(user)
+    const profile = await Profile.findById(user.profile)
+    const token = createJWT(user, profile)
     res.json({ token })
     
   } catch (err) {
@@ -109,7 +111,7 @@ function handleAuthError(err, res) {
   }
 }
 
-function createJWT(user) {
+function createJWT(user, profile) {
   return jwt.sign(
     {
       _id: user._id,
