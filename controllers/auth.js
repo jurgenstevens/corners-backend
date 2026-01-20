@@ -1,7 +1,12 @@
 import jwt from 'jsonwebtoken'
-
 import { User } from '../models/user.js'
-import { Profile } from '../models/profile.js'
+import { Profile, AUTH_LEVELS } from '../models/profile.js'
+
+const ROLE_TO_AUTH_LEVEL = {
+  Patron: AUTH_LEVELS.PATRON,
+  Business: AUTH_LEVELS.BUSINESS,
+  Distributor: AUTH_LEVELS.DISTRIBUTOR,
+}
 
 async function signup(req, res) {
   try {
@@ -10,25 +15,45 @@ async function signup(req, res) {
       throw new Error('no CLOUDINARY_URL in back-end .env file')
     }
 
-    const user = await User.findOne({ email: req.body.email })
-    if (user) throw new Error('Account already exists')
+    const { name, email, password, role } = req.body
 
-    const newProfile = await Profile.create(req.body)
-    req.body.profile = newProfile._id
-    const newUser = await User.create(req.body)
+    const authorizationLevel = ROLE_TO_AUTH_LEVEL[role]
+    if (!authorizationLevel) {
+      return res.status(400).json({ err: 'Invalid role' })
+    }
+
+    const existingUser = await User.findOne({ email })
+    if (existingUser) throw new Error('Account already exists')
+
+    // ✅ Create profile with controlled fields
+    const newProfile = await Profile.create({
+      name,
+      email,
+      authorizationLevel,
+    })
+
+    // ✅ Attach profile to user
+    const newUser = await User.create({
+      email,
+      password,
+      profile: newProfile._id,
+    })
 
     const token = createJWT(newUser)
     res.status(200).json({ token })
+
   } catch (err) {
     console.log(err)
+
+    // rollback safety
     try {
-      if (req.body.profile) {
+      if (req.body?.profile) {
         await Profile.findByIdAndDelete(req.body.profile)
       }
-    } catch (err) {
-      console.log(err)
-      return res.status(500).json({ err: err.message })
+    } catch (cleanupErr) {
+      console.log('Cleanup failed:', cleanupErr)
     }
+
     res.status(500).json({ err: err.message })
   }
 }

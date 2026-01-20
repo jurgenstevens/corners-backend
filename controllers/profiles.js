@@ -1,5 +1,5 @@
 import { Profile } from '../models/profile.js'
-import { v2 as cloudinary } from 'cloudinary'
+import cloudinary from '../config/cloudinary.js'
 
 async function index(req, res) {
   try {
@@ -21,7 +21,7 @@ async function addPhoto(req, res) {
       { tags: `${req.user.email}` }
     )
     profile.photo = image.url
-    
+
     await profile.save()
     res.status(201).json(profile.photo)
   } catch (err) {
