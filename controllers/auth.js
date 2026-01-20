@@ -110,7 +110,16 @@ function handleAuthError(err, res) {
 }
 
 function createJWT(user) {
-  return jwt.sign({ user }, process.env.SECRET, { expiresIn: '24h' })
+  return jwt.sign(
+    {
+      _id: user._id,
+      email: user.email,
+      profileId: profile._id,
+      name: profile.name,
+      authorizationLevel: profile.authorizationLevel,
+    },
+    process.env.SECRET, 
+    { expiresIn: '24h' })
 }
 
 export { signup, login, changePassword }
