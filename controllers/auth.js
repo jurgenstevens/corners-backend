@@ -32,14 +32,16 @@ async function signup(req, res) {
       authorizationLevel,
     })
 
-    // Attach profile to user
     const newUser = await User.create({
       email,
       password,
       profile: newProfile._id,
     })
 
-    const token = createJWT(newUser, newProfile)
+    // ✅ IMPORTANT: populate profile before creating JWT
+    const populatedUser = await User.findById(newUser._id).populate('profile')
+
+    const token = createJWT(populatedUser, newProfile)
     res.status(200).json({ token })
 
   } catch (err) {
@@ -65,14 +67,13 @@ async function login(req, res) {
       throw new Error('no CLOUDINARY_URL in back-end .env')
     }
 
-    const user = await User.findOne({ email: req.body.email })
+    const user = await User.findOne({ email: req.body.email }).populate('profile')
     if (!user) throw new Error('User not found')
 
     const isMatch = await user.comparePassword(req.body.password)
     if (!isMatch) throw new Error('Incorrect password')
 
-    const profile = await Profile.findById(user.profile)
-    const token = createJWT(user, profile)
+    const token = createJWT(user)
     res.json({ token })
   } catch (err) {
     handleAuthError(err, res)
@@ -111,14 +112,19 @@ function handleAuthError(err, res) {
   }
 }
 
-function createJWT(user, profile) {
+function createJWT(user) {
+  if (!user.profile) {
+    throw new Error('User profile not populated before creating JWT')
+  }  
+  
   return jwt.sign(
     {
+
       _id: user._id,
       email: user.email,
-      profileId: profile._id,
-      name: profile.name,
-      authorizationLevel: profile.authorizationLevel,
+      profileId: user.profile._id,
+      name: user.profile.name,
+      authorizationLevel: user.profile.authorizationLevel,
     },
     process.env.SECRET, 
     { expiresIn: '24h' })

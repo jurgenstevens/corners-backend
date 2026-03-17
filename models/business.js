@@ -7,38 +7,34 @@ const businessSchema = new Schema({
     ref: 'Profile',
     required: true,
     unique: true,
+    index: true,
   },
 
-  displayName: String,
-  description: String,
+  displayName: {
+    type: String,
+    trim: true,
+  },
 
-  // Products owned by this business
-  products: [{
-    type: Schema.Types.ObjectId,
-    ref: 'Product',
-  }],
+  description: {
+    type: String,
+    trim: true,
+  },
 
-  // Patrons associated with this business
-  patrons: [{
-    type: Schema.Types.ObjectId,
-    ref: 'Patron',
-  }],
+  logo: {
+    type: String,
+  },
 
-  // Orders placed by patrons to this business
-  incomingOrders: [{
-    type: Schema.Types.ObjectId,
-    ref: 'Order',
-  }],
-
-  // Orders this business sends to distributors
-  outgoingOrders: [{
-    type: Schema.Types.ObjectId,
-    ref: 'Order',
-  }],
+  location: {
+    zip: String,
+    city: String,
+    state: String,
+    country: String,
+  },
 
   isActive: {
     type: Boolean,
     default: true,
+    index: true,
   },
 
 }, { timestamps: true })
