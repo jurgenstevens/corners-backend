@@ -5,36 +5,41 @@ const productSchema = new Schema({
   name: {
     type: String,
     required: true,
+    trim: true,
+    index: true,
   },
 
-  description: String,
+  brand: {
+    type: String,
+    trim: true,
+    index: true,
+  },
+
+  description: {
+    type: String,
+    trim: true,
+  },
 
   price: {
     type: Number,
     required: true,
   },
 
-  sku: {
+  image: {
     type: String,
-    unique: true,
   },
 
-  // Business that owns this product
   business: {
     type: Schema.Types.ObjectId,
-    ref: 'Business',
+    ref: 'Profile', // owner via profile
     required: true,
+    index: true,
   },
-
-  // Distributors that can supply this product
-  distributors: [{
-    type: Schema.Types.ObjectId,
-    ref: 'Distributor',
-  }],
 
   isActive: {
     type: Boolean,
     default: true,
+    index: true,
   },
 
 }, { timestamps: true })
