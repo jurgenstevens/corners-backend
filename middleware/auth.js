@@ -1,51 +1,29 @@
-import jwt from 'jsonwebtoken'
+const jwt = require('jsonwebtoken')
 
-const SECRET = process.env.SECRET
-import { AUTH_LEVELS } from '../models/profile.js'
-
-function checkAdmin(req, res, next) {
-  if (req.user?.profile?.authorizationLevel === AUTH_LEVELS.ADMIN) {
-    return next()
-  }
-  return res.status(403).json({ err: 'Admins only' })
-}
-
-function checkBusiness(req, res, next) {
-  if (req.user?.profile?.authorizationLevel === AUTH_LEVELS.BUSINESS) {
-    return next()
-  }
-  return res.status(403).json({ err: 'Business only' })
-}
-
-function checkDistributor(req, res, next) {
-  if (req.user?.profile?.authorizationLevel === AUTH_LEVELS.DISTRIBUTOR) {
-    return next()
-  }
-  return res.status(403).json({ err: 'Distributors only' })
-}
-
-function checkPatron(req, res, next) {
-  if (req.user?.profile?.authorizationLevel === AUTH_LEVELS.PATRON) {
-    return next()
-  }
-  return res.status(403).json({ err: 'Patrons only' })
-}
-
-const decodeUserFromToken = (req, res, next) => {
-  let token = req.get('Authorization') || req.query.token || req.body.token
-  if (!token) return next()
-
+function decodeUserFromToken(req, res, next) {
+  let token = req.get('Authorization')
+  if (!token) return res.status(401).json({ err: 'Not authorized, no token' })
   token = token.replace('Bearer ', '')
-  jwt.verify(token, SECRET, (err, decoded) => {
-    if (err) return next(err)
-
-    req.user = decoded.user
+  jwt.verify(token, process.env.SECRET, function (err, decoded) {
+    if (err) return res.status(401).json({ err: 'Not authorized, bad token' })
+    req.user = decoded
     next()
   })
 }
 
-function checkAuth(req, res, next) {
-  return req.user ? next() : res.status(401).json({ err: 'Not Authorized' })
+function checkBusiness(req, res, next) {
+  if (req.user?.authorizationLevel >= 250) return next()
+  return res.status(403).json({ err: 'Business access required' })
 }
 
-export { decodeUserFromToken, checkAuth, checkAdmin, checkBusiness, checkPatron, checkDistributor }
+function checkPatron(req, res, next) {
+  if (req.user?.authorizationLevel >= 150 && req.user?.authorizationLevel < 250) return next()
+  return res.status(403).json({ err: 'Patron access required' })
+}
+
+function checkDistributor(req, res, next) {
+  if (req.user?.authorizationLevel >= 500) return next()
+  return res.status(403).json({ err: 'Distributor access required' })
+}
+
+module.exports = { decodeUserFromToken, checkBusiness, checkPatron, checkDistributor }

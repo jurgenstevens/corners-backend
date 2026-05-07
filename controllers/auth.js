@@ -1,133 +1,87 @@
-import jwt from 'jsonwebtoken'
-import { User } from '../models/user.js'
-import { Profile, AUTH_LEVELS } from '../models/profile.js'
+const Profile = require('../models/profile')
+const User = require('../models/user')
+const Business = require('../models/business')
+const Patron = require('../models/patron')
+const jwt = require('jsonwebtoken')
+const bcrypt = require('bcrypt')
 
-const ROLE_TO_AUTH_LEVEL = {
-  Patron: AUTH_LEVELS.PATRON,
-  Business: AUTH_LEVELS.BUSINESS,
-  Distributor: AUTH_LEVELS.DISTRIBUTOR,
+const SALT_ROUNDS = 10
+const AUTH_LEVELS = Profile.AUTH_LEVELS || { PATRON: 150, BUSINESS: 250, DISTRIBUTOR: 500 }
+
+function createJWT(profile) {
+  return jwt.sign(
+    {
+      _id: profile._id,
+      email: profile.email,
+      profileId: profile._id,
+      name: profile.name,
+      authorizationLevel: profile.authorizationLevel,
+    },
+    process.env.SECRET,
+    { expiresIn: '7d' }
+  )
 }
 
 async function signup(req, res) {
   try {
-    if (!process.env.SECRET) throw new Error('no SECRET in back-end .env')
-    if (!process.env.CLOUDINARY_URL) {
-      throw new Error('no CLOUDINARY_URL in back-end .env file')
-    }
+    const { name, email, password, photo, role, zip, city, state, businessType, visibility } = req.body
 
-    const { name, email, password, role } = req.body
+    const existing = await Profile.findOne({ email })
+    if (existing) return res.status(400).json({ err: 'Email already in use' })
 
-    const authorizationLevel = ROLE_TO_AUTH_LEVEL[role]
-    if (!authorizationLevel) {
-      return res.status(400).json({ err: 'Invalid role' })
-    }
+    const authLevel = role === 'business' ? AUTH_LEVELS.BUSINESS
+      : role === 'distributor' ? AUTH_LEVELS.DISTRIBUTOR
+      : AUTH_LEVELS.PATRON
 
-    const existingUser = await User.findOne({ email })
-    if (existingUser) throw new Error('Account already exists')
+    const hashedPw = await bcrypt.hash(password, SALT_ROUNDS)
 
-    // Create profile with controlled fields
-    const newProfile = await Profile.create({
+    const profile = await Profile.create({
       name,
       email,
-      authorizationLevel,
+      photo: photo || '',
+      authorizationLevel: authLevel,
     })
 
-    const newUser = await User.create({
-      email,
-      password,
-      profile: newProfile._id,
-    })
+    await User.create({ profile: profile._id, password: hashedPw })
 
-    // ✅ IMPORTANT: populate profile before creating JWT
-    const populatedUser = await User.findById(newUser._id).populate('profile')
-
-    const token = createJWT(populatedUser, newProfile)
-    res.status(200).json({ token })
-
-  } catch (err) {
-    console.log(err)
-
-    // rollback safety
-    try {
-      if (req.body?.profile) {
-        await Profile.findByIdAndDelete(req.body.profile)
-      }
-    } catch (cleanupErr) {
-      console.log('Cleanup failed:', cleanupErr)
+    if (authLevel === AUTH_LEVELS.BUSINESS) {
+      await Business.create({
+        profile: profile._id,
+        displayName: name,
+        businessType: businessType || '',
+        visibility: visibility || 'public',
+      })
+    } else if (authLevel === AUTH_LEVELS.PATRON) {
+      await Patron.create({
+        profile: profile._id,
+        location: { zip: zip || '', city: city || '', state: state || '' },
+      })
     }
 
+    const token = createJWT(profile)
+    res.status(201).json({ token })
+  } catch (err) {
     res.status(500).json({ err: err.message })
   }
 }
 
 async function login(req, res) {
   try {
-    if (!process.env.SECRET) throw new Error('no SECRET in back-end .env')
-    if (!process.env.CLOUDINARY_URL) {
-      throw new Error('no CLOUDINARY_URL in back-end .env')
-    }
+    const { email, password } = req.body
+    const profile = await Profile.findOne({ email })
+    if (!profile) return res.status(400).json({ err: 'Invalid credentials' })
 
-    const user = await User.findOne({ email: req.body.email }).populate('profile')
-    if (!user) throw new Error('User not found')
+    const user = await User.findOne({ profile: profile._id })
+    if (!user) return res.status(400).json({ err: 'Invalid credentials' })
 
-    const isMatch = await user.comparePassword(req.body.password)
-    if (!isMatch) throw new Error('Incorrect password')
+    const match = await bcrypt.compare(password, user.password)
+    if (!match) return res.status(400).json({ err: 'Invalid credentials' })
 
-    const token = createJWT(user)
+    const token = createJWT(profile)
     res.json({ token })
   } catch (err) {
-    handleAuthError(err, res)
+    res.status(500).json({ err: err.message })
   }
 }
 
-async function changePassword(req, res) {
-  try {
-    const user = await User.findById(req.user._id)
-    if (!user) throw new Error('User not found')
-
-    const isMatch = user.comparePassword(req.body.password)
-    if (!isMatch) throw new Error('Incorrect password')
-
-    user.password = req.body.newPassword
-    await user.save()
-
-    const profile = await Profile.findById(user.profile)
-    const token = createJWT(user, profile)
-    res.json({ token })
-    
-  } catch (err) {
-    handleAuthError(err, res)
-  }
-}
-
-/* --== Helper Functions ==-- */
-
-function handleAuthError(err, res) {
-  console.log(err)
-  const { message } = err
-  if (message === 'User not found' || message === 'Incorrect password') {
-    res.status(401).json({ err: message })
-  } else {
-    res.status(500).json({ err: message })
-  }
-}
-
-function createJWT(user) {
-  if (!user.profile) {
-    throw new Error('User profile not populated before creating JWT')
-  }  
-  
-  return jwt.sign(
-    {
-
-      _id: user._id,
-      email: user.email,
-      profileId: user.profile._id,
-      name: user.profile.name,
-      authorizationLevel: user.profile.authorizationLevel,
-    },
-    process.env.SECRET, 
-    { expiresIn: '24h' })
-}
-
-export { signup, login, changePassword }
+module.exports = { signup, login }
