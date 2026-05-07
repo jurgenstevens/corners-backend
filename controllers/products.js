@@ -1,9 +1,9 @@
-const Product = require('../models/product')
-const Connection = require('../models/connection')
-const Business = require('../models/business')
-const Notification = require('../models/notification')
+import Product from '../models/product.js'
+import Connection from '../models/connection.js'
+import Business from '../models/business.js'
+import Notification from '../models/notification.js'
 
-async function index(req, res) {
+export async function index(req, res) {
   try {
     const products = await Product.find({ business: req.user._id, isActive: true }).sort('-createdAt')
     res.json(products)
@@ -12,7 +12,7 @@ async function index(req, res) {
   }
 }
 
-async function indexForPatron(req, res) {
+export async function indexForPatron(req, res) {
   try {
     const connections = await Connection.find({ patron: req.user._id, status: 'approved' }).select('business')
     const businessIds = connections.map(c => c.business)
@@ -32,7 +32,7 @@ async function indexForPatron(req, res) {
   }
 }
 
-async function create(req, res) {
+export async function create(req, res) {
   try {
     const product = await Product.create({ ...req.body, business: req.user._id })
     res.status(201).json(product)
@@ -41,7 +41,7 @@ async function create(req, res) {
   }
 }
 
-async function requestProduct(req, res) {
+export async function requestProduct(req, res) {
   try {
     const { businessId } = req.params
     const business = await Business.findById(businessId)
@@ -63,7 +63,7 @@ async function requestProduct(req, res) {
   }
 }
 
-async function vote(req, res) {
+export async function vote(req, res) {
   try {
     const product = await Product.findById(req.params.id)
     if (!product) return res.status(404).json({ err: 'Product not found' })
@@ -94,7 +94,7 @@ async function vote(req, res) {
   }
 }
 
-async function updateStatus(req, res) {
+export async function updateStatus(req, res) {
   try {
     const { status } = req.body
     const product = await Product.findOne({ _id: req.params.id, business: req.user._id })
@@ -126,7 +126,7 @@ async function updateStatus(req, res) {
   }
 }
 
-async function update(req, res) {
+export async function update(req, res) {
   try {
     const product = await Product.findOneAndUpdate(
       { _id: req.params.id, business: req.user._id },
@@ -140,7 +140,7 @@ async function update(req, res) {
   }
 }
 
-async function destroy(req, res) {
+export async function destroy(req, res) {
   try {
     await Product.findOneAndUpdate(
       { _id: req.params.id, business: req.user._id },
@@ -151,5 +151,3 @@ async function destroy(req, res) {
     res.status(500).json({ err: err.message })
   }
 }
-
-module.exports = { index, indexForPatron, create, requestProduct, vote, updateStatus, update, destroy }

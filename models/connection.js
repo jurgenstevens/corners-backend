@@ -1,5 +1,5 @@
-const mongoose = require('mongoose')
-const Schema = mongoose.Schema
+import mongoose from 'mongoose'
+const { Schema } = mongoose
 
 const connectionSchema = new Schema({
   patron: { type: Schema.Types.ObjectId, ref: 'Profile', required: true },
@@ -10,4 +10,4 @@ const connectionSchema = new Schema({
 
 connectionSchema.index({ patron: 1, business: 1 }, { unique: true })
 
-module.exports = mongoose.model('Connection', connectionSchema)
+export default mongoose.model('Connection', connectionSchema)

@@ -1,5 +1,5 @@
-const mongoose = require('mongoose')
-const Schema = mongoose.Schema
+import mongoose from 'mongoose'
+const { Schema } = mongoose
 
 const productSchema = new Schema({
   name: { type: String, required: true, trim: true },
@@ -20,4 +20,4 @@ const productSchema = new Schema({
   isActive: { type: Boolean, default: true },
 }, { timestamps: true })
 
-module.exports = mongoose.model('Product', productSchema)
+export default mongoose.model('Product', productSchema)

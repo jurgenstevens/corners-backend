@@ -1,7 +1,7 @@
-const Business = require('../models/business')
-const Connection = require('../models/connection')
+import Business from '../models/business.js'
+import Connection from '../models/connection.js'
 
-async function show(req, res) {
+export async function show(req, res) {
   try {
     const { id } = req.params
     const business = await Business.findById(id).populate('profile', 'name photo')
@@ -19,9 +19,13 @@ async function show(req, res) {
   }
 }
 
-async function setup(req, res) {
+export async function setup(req, res) {
   try {
-    const updates = req.body
+    const { zip, city, state, ...rest } = req.body
+    const updates = { ...rest }
+    if (zip || city || state) {
+      updates.location = { zip: zip || '', city: city || '', state: state || '' }
+    }
     const business = await Business.findOneAndUpdate(
       { profile: req.user._id },
       { $set: updates },
@@ -33,7 +37,7 @@ async function setup(req, res) {
   }
 }
 
-async function getMyBusiness(req, res) {
+export async function getMyBusiness(req, res) {
   try {
     const business = await Business.findOne({ profile: req.user._id })
     if (!business) return res.status(404).json({ err: 'Business not found' })
@@ -42,5 +46,3 @@ async function getMyBusiness(req, res) {
     res.status(500).json({ err: err.message })
   }
 }
-
-module.exports = { show, setup, getMyBusiness }

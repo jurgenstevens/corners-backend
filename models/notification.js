@@ -1,5 +1,5 @@
-const mongoose = require('mongoose')
-const Schema = mongoose.Schema
+import mongoose from 'mongoose'
+const { Schema } = mongoose
 
 const notificationSchema = new Schema({
   recipient: { type: Schema.Types.ObjectId, ref: 'Profile', required: true },
@@ -13,4 +13,4 @@ const notificationSchema = new Schema({
   relatedId: { type: Schema.Types.ObjectId },
 }, { timestamps: true })
 
-module.exports = mongoose.model('Notification', notificationSchema)
+export default mongoose.model('Notification', notificationSchema)

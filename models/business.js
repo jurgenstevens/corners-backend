@@ -1,5 +1,5 @@
-const mongoose = require('mongoose')
-const Schema = mongoose.Schema
+import mongoose from 'mongoose'
+const { Schema } = mongoose
 
 const businessSchema = new Schema({
   profile: { type: Schema.Types.ObjectId, ref: 'Profile', required: true },
@@ -30,4 +30,4 @@ const businessSchema = new Schema({
   isActive: { type: Boolean, default: true },
 }, { timestamps: true })
 
-module.exports = mongoose.model('Business', businessSchema)
+export default mongoose.model('Business', businessSchema)

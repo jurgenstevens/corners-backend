@@ -1,9 +1,9 @@
-const Connection = require('../models/connection')
-const Business = require('../models/business')
-const Patron = require('../models/patron')
-const Notification = require('../models/notification')
+import Connection from '../models/connection.js'
+import Business from '../models/business.js'
+import Patron from '../models/patron.js'
+import Notification from '../models/notification.js'
 
-async function nearby(req, res) {
+export async function nearby(req, res) {
   try {
     const patron = await Patron.findOne({ profile: req.user._id })
     if (!patron) return res.status(404).json({ err: 'Patron profile not found' })
@@ -27,7 +27,7 @@ async function nearby(req, res) {
   }
 }
 
-async function requestConnection(req, res) {
+export async function requestConnection(req, res) {
   try {
     const { businessId } = req.params
     const business = await Business.findById(businessId)
@@ -48,7 +48,7 @@ async function requestConnection(req, res) {
       await Notification.create({
         recipient: business.profile,
         type: 'connection_request',
-        message: `A patron has requested to connect with your business.`,
+        message: 'A patron has requested to connect with your business.',
         relatedId: conn._id,
       })
     }
@@ -59,7 +59,7 @@ async function requestConnection(req, res) {
   }
 }
 
-async function dismiss(req, res) {
+export async function dismiss(req, res) {
   try {
     const { businessId } = req.params
     await Patron.findOneAndUpdate(
@@ -72,27 +72,27 @@ async function dismiss(req, res) {
   }
 }
 
-async function getPending(req, res) {
+export async function getPending(req, res) {
   try {
     const business = await Business.findOne({ profile: req.user._id })
     if (!business) return res.status(404).json({ err: 'Business not found' })
 
-    const pending = await Connection.find({ business: business._id })
+    const connections = await Connection.find({ business: business._id })
       .populate('patron', 'name photo email')
       .sort('-createdAt')
 
-    res.json(pending)
+    res.json(connections)
   } catch (err) {
     res.status(500).json({ err: err.message })
   }
 }
 
-async function updateStatus(req, res) {
+export async function updateStatus(req, res) {
   try {
     const { connectionId } = req.params
     const { status, denialReason } = req.body
 
-    const conn = await Connection.findById(connectionId).populate('patron')
+    const conn = await Connection.findById(connectionId)
     if (!conn) return res.status(404).json({ err: 'Connection not found' })
 
     const business = await Business.findOne({ profile: req.user._id })
@@ -118,12 +118,14 @@ async function updateStatus(req, res) {
       blocked: `Your connection request to ${business.displayName || 'a business'} was not accepted.`,
     }
 
-    await Notification.create({
-      recipient: conn.patron,
-      type: typeMap[status],
-      message: msgMap[status],
-      relatedId: conn._id,
-    })
+    if (typeMap[status]) {
+      await Notification.create({
+        recipient: conn.patron,
+        type: typeMap[status],
+        message: msgMap[status],
+        relatedId: conn._id,
+      })
+    }
 
     res.json(conn)
   } catch (err) {
@@ -131,7 +133,7 @@ async function updateStatus(req, res) {
   }
 }
 
-async function getMyStores(req, res) {
+export async function getMyStores(req, res) {
   try {
     const patron = await Patron.findOne({ profile: req.user._id }).populate({
       path: 'businesses',
@@ -144,7 +146,7 @@ async function getMyStores(req, res) {
   }
 }
 
-async function getMyConnectionStatus(req, res) {
+export async function getMyConnectionStatus(req, res) {
   try {
     const { businessId } = req.params
     const conn = await Connection.findOne({ patron: req.user._id, business: businessId })
@@ -153,5 +155,3 @@ async function getMyConnectionStatus(req, res) {
     res.status(500).json({ err: err.message })
   }
 }
-
-module.exports = { nearby, requestConnection, dismiss, getPending, updateStatus, getMyStores, getMyConnectionStatus }

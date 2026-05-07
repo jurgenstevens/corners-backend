@@ -1,12 +1,11 @@
-const Profile = require('../models/profile')
-const User = require('../models/user')
-const Business = require('../models/business')
-const Patron = require('../models/patron')
-const jwt = require('jsonwebtoken')
-const bcrypt = require('bcrypt')
+import { Profile, AUTH_LEVELS } from '../models/profile.js'
+import User from '../models/user.js'
+import Business from '../models/business.js'
+import Patron from '../models/patron.js'
+import jwt from 'jsonwebtoken'
+import bcrypt from 'bcrypt'
 
 const SALT_ROUNDS = 10
-const AUTH_LEVELS = Profile.AUTH_LEVELS || { PATRON: 150, BUSINESS: 250, DISTRIBUTOR: 500 }
 
 function createJWT(profile) {
   return jwt.sign(
@@ -22,7 +21,7 @@ function createJWT(profile) {
   )
 }
 
-async function signup(req, res) {
+export async function signup(req, res) {
   try {
     const { name, email, password, photo, role, zip, city, state, businessType, visibility } = req.body
 
@@ -65,7 +64,7 @@ async function signup(req, res) {
   }
 }
 
-async function login(req, res) {
+export async function login(req, res) {
   try {
     const { email, password } = req.body
     const profile = await Profile.findOne({ email })
@@ -83,5 +82,3 @@ async function login(req, res) {
     res.status(500).json({ err: err.message })
   }
 }
-
-module.exports = { signup, login }

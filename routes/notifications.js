@@ -1,9 +1,11 @@
-const router = require('express').Router()
-const ctrl = require('../controllers/notifications')
-const { decodeUserFromToken } = require('../middleware/auth')
+import { Router } from 'express'
+import * as ctrl from '../controllers/notifications.js'
+import { decodeUserFromToken } from '../middleware/auth.js'
+
+const router = Router()
 
 router.get('/', decodeUserFromToken, ctrl.index)
-router.put('/:id/read', decodeUserFromToken, ctrl.markRead)
 router.put('/read-all', decodeUserFromToken, ctrl.markAllRead)
+router.put('/:id/read', decodeUserFromToken, ctrl.markRead)
 
-module.exports = router
+export default router

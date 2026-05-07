@@ -1,6 +1,8 @@
-const router = require('express').Router()
-const ctrl = require('../controllers/connections')
-const { decodeUserFromToken, checkPatron, checkBusiness } = require('../middleware/auth')
+import { Router } from 'express'
+import * as ctrl from '../controllers/connections.js'
+import { decodeUserFromToken, checkPatron, checkBusiness } from '../middleware/auth.js'
+
+const router = Router()
 
 router.get('/nearby', decodeUserFromToken, checkPatron, ctrl.nearby)
 router.post('/request/:businessId', decodeUserFromToken, checkPatron, ctrl.requestConnection)
@@ -10,4 +12,4 @@ router.get('/status/:businessId', decodeUserFromToken, checkPatron, ctrl.getMyCo
 router.get('/pending', decodeUserFromToken, checkBusiness, ctrl.getPending)
 router.put('/:connectionId/status', decodeUserFromToken, checkBusiness, ctrl.updateStatus)
 
-module.exports = router
+export default router

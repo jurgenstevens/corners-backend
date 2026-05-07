@@ -1,6 +1,6 @@
-const Notification = require('../models/notification')
+import Notification from '../models/notification.js'
 
-async function index(req, res) {
+export async function index(req, res) {
   try {
     const notifications = await Notification.find({ recipient: req.user._id })
       .sort('-createdAt')
@@ -11,7 +11,7 @@ async function index(req, res) {
   }
 }
 
-async function markRead(req, res) {
+export async function markRead(req, res) {
   try {
     await Notification.findOneAndUpdate(
       { _id: req.params.id, recipient: req.user._id },
@@ -23,7 +23,7 @@ async function markRead(req, res) {
   }
 }
 
-async function markAllRead(req, res) {
+export async function markAllRead(req, res) {
   try {
     await Notification.updateMany({ recipient: req.user._id }, { read: true })
     res.json({ message: 'All marked as read' })
@@ -31,5 +31,3 @@ async function markAllRead(req, res) {
     res.status(500).json({ err: err.message })
   }
 }
-
-module.exports = { index, markRead, markAllRead }
