@@ -1,5 +1,6 @@
 import jwt from 'jsonwebtoken'
-import { User } from '../models/user.js'
+import UserModel from '../models/user.js'
+const { User } = UserModel
 import { Profile, AUTH_LEVELS } from '../models/profile.js'
 import Business from '../models/business.js'
 import Patron from '../models/patron.js'
