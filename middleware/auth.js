@@ -1,14 +1,18 @@
 import jwt from 'jsonwebtoken'
 
 export function decodeUserFromToken(req, res, next) {
-  let token = req.get('Authorization')
-  if (!token) return res.status(401).json({ err: 'Not authorized, no token' })
+  let token = req.get('Authorization') || req.query.token || req.body.token
+  if (!token) return next()
   token = token.replace('Bearer ', '')
-  jwt.verify(token, process.env.SECRET, function (err, decoded) {
-    if (err) return res.status(401).json({ err: 'Not authorized, bad token' })
+  jwt.verify(token, process.env.SECRET, (err, decoded) => {
+    if (err) return next(err)
     req.user = decoded
     next()
   })
+}
+
+export function checkAuth(req, res, next) {
+  return req.user ? next() : res.status(401).json({ err: 'Not Authorized' })
 }
 
 export function checkBusiness(req, res, next) {
@@ -24,4 +28,9 @@ export function checkPatron(req, res, next) {
 export function checkDistributor(req, res, next) {
   if (req.user?.authorizationLevel >= 500) return next()
   return res.status(403).json({ err: 'Distributor access required' })
+}
+
+export function checkAdmin(req, res, next) {
+  if (req.user?.authorizationLevel === 100) return next()
+  return res.status(403).json({ err: 'Admin access required' })
 }
