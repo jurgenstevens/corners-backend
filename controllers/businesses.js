@@ -7,9 +7,9 @@ export async function show(req, res) {
     const business = await Business.findById(id).populate('profile', 'name photo')
     if (!business) return res.status(404).json({ err: 'Business not found' })
 
-    const isSelf = business.profile._id.toString() === req.user._id.toString()
+    const isSelf = business.profile._id.toString() === req.user.profileId.toString()
     if (!isSelf) {
-      const conn = await Connection.findOne({ patron: req.user._id, business: id, status: 'approved' })
+      const conn = await Connection.findOne({ patron: req.user.profileId, business: id, status: 'approved' })
       if (!conn) return res.status(403).json({ err: 'Not connected to this business' })
     }
 
@@ -27,7 +27,7 @@ export async function setup(req, res) {
       updates.location = { zip: zip || '', city: city || '', state: state || '' }
     }
     const business = await Business.findOneAndUpdate(
-      { profile: req.user._id },
+      { profile: req.user.profileId },
       { $set: updates },
       { new: true, upsert: true }
     )
@@ -39,7 +39,7 @@ export async function setup(req, res) {
 
 export async function getMyBusiness(req, res) {
   try {
-    const business = await Business.findOne({ profile: req.user._id })
+    const business = await Business.findOne({ profile: req.user.profileId })
     if (!business) return res.status(404).json({ err: 'Business not found' })
     res.json(business)
   } catch (err) {

@@ -5,7 +5,7 @@ import Notification from '../models/notification.js'
 
 export async function index(req, res) {
   try {
-    const products = await Product.find({ business: req.user._id, isActive: true }).sort('-createdAt')
+    const products = await Product.find({ business: req.user.profileId, isActive: true }).sort('-createdAt')
     res.json(products)
   } catch (err) {
     res.status(500).json({ err: err.message })
@@ -14,7 +14,7 @@ export async function index(req, res) {
 
 export async function indexForPatron(req, res) {
   try {
-    const connections = await Connection.find({ patron: req.user._id, status: 'approved' }).select('business')
+    const connections = await Connection.find({ patron: req.user.profileId, status: 'approved' }).select('business')
     const businessIds = connections.map(c => c.business)
 
     const businesses = await Business.find({ _id: { $in: businessIds } }).select('profile')
@@ -34,7 +34,7 @@ export async function indexForPatron(req, res) {
 
 export async function create(req, res) {
   try {
-    const product = await Product.create({ ...req.body, business: req.user._id })
+    const product = await Product.create({ ...req.body, business: req.user.profileId })
     res.status(201).json(product)
   } catch (err) {
     res.status(500).json({ err: err.message })
@@ -47,13 +47,13 @@ export async function requestProduct(req, res) {
     const business = await Business.findById(businessId)
     if (!business) return res.status(404).json({ err: 'Business not found' })
 
-    const conn = await Connection.findOne({ patron: req.user._id, business: businessId, status: 'approved' })
+    const conn = await Connection.findOne({ patron: req.user.profileId, business: businessId, status: 'approved' })
     if (!conn) return res.status(403).json({ err: 'You must be connected to this business to request a product' })
 
     const product = await Product.create({
       ...req.body,
       business: business.profile,
-      requestedBy: req.user._id,
+      requestedBy: req.user.profileId,
       status: 'pending',
     })
 
@@ -68,11 +68,11 @@ export async function vote(req, res) {
     const product = await Product.findById(req.params.id)
     if (!product) return res.status(404).json({ err: 'Product not found' })
 
-    if (product.votedBy.map(v => v.toString()).includes(req.user._id.toString())) {
+    if (product.votedBy.map(v => v.toString()).includes(req.user.profileId.toString())) {
       return res.status(400).json({ err: 'Already voted' })
     }
 
-    product.votedBy.push(req.user._id)
+    product.votedBy.push(req.user.profileId)
     product.currentTally = product.votedBy.length
 
     if (product.currentTally >= product.tallyGoal && product.status === 'approved') {
@@ -97,7 +97,7 @@ export async function vote(req, res) {
 export async function updateStatus(req, res) {
   try {
     const { status } = req.body
-    const product = await Product.findOne({ _id: req.params.id, business: req.user._id })
+    const product = await Product.findOne({ _id: req.params.id, business: req.user.profileId })
     if (!product) return res.status(404).json({ err: 'Product not found' })
 
     product.status = status
@@ -129,7 +129,7 @@ export async function updateStatus(req, res) {
 export async function update(req, res) {
   try {
     const product = await Product.findOneAndUpdate(
-      { _id: req.params.id, business: req.user._id },
+      { _id: req.params.id, business: req.user.profileId },
       req.body,
       { new: true }
     )
@@ -143,7 +143,7 @@ export async function update(req, res) {
 export async function destroy(req, res) {
   try {
     await Product.findOneAndUpdate(
-      { _id: req.params.id, business: req.user._id },
+      { _id: req.params.id, business: req.user.profileId },
       { isActive: false }
     )
     res.json({ message: 'Product removed' })

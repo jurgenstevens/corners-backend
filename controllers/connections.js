@@ -5,13 +5,13 @@ import Notification from '../models/notification.js'
 
 export async function nearby(req, res) {
   try {
-    const patron = await Patron.findOne({ profile: req.user._id })
+    const patron = await Patron.findOne({ profile: req.user.profileId })
     if (!patron) return res.status(404).json({ err: 'Patron profile not found' })
 
     const zipPrefix = (patron.location?.zip || '').slice(0, 3)
     if (!zipPrefix) return res.json([])
 
-    const existing = await Connection.find({ patron: req.user._id }).select('business')
+    const existing = await Connection.find({ patron: req.user.profileId }).select('business')
     const connectedIds = existing.map(c => c.business)
     const dismissedIds = patron.dismissedBusinesses || []
 
@@ -33,15 +33,15 @@ export async function requestConnection(req, res) {
     const business = await Business.findById(businessId)
     if (!business) return res.status(404).json({ err: 'Business not found' })
 
-    const existing = await Connection.findOne({ patron: req.user._id, business: businessId })
+    const existing = await Connection.findOne({ patron: req.user.profileId, business: businessId })
     if (existing) return res.status(400).json({ err: 'Connection already exists' })
 
     const status = business.visibility === 'public' ? 'approved' : 'pending'
-    const conn = await Connection.create({ patron: req.user._id, business: businessId, status })
+    const conn = await Connection.create({ patron: req.user.profileId, business: businessId, status })
 
     if (status === 'approved') {
       await Patron.findOneAndUpdate(
-        { profile: req.user._id },
+        { profile: req.user.profileId },
         { $addToSet: { businesses: businessId } }
       )
     } else {
@@ -63,7 +63,7 @@ export async function dismiss(req, res) {
   try {
     const { businessId } = req.params
     await Patron.findOneAndUpdate(
-      { profile: req.user._id },
+      { profile: req.user.profileId },
       { $addToSet: { dismissedBusinesses: businessId } }
     )
     res.json({ message: 'Business dismissed' })
@@ -74,7 +74,7 @@ export async function dismiss(req, res) {
 
 export async function getPending(req, res) {
   try {
-    const business = await Business.findOne({ profile: req.user._id })
+    const business = await Business.findOne({ profile: req.user.profileId })
     if (!business) return res.status(404).json({ err: 'Business not found' })
 
     const connections = await Connection.find({ business: business._id })
@@ -95,7 +95,7 @@ export async function updateStatus(req, res) {
     const conn = await Connection.findById(connectionId)
     if (!conn) return res.status(404).json({ err: 'Connection not found' })
 
-    const business = await Business.findOne({ profile: req.user._id })
+    const business = await Business.findOne({ profile: req.user.profileId })
     if (!business || conn.business.toString() !== business._id.toString()) {
       return res.status(403).json({ err: 'Not authorized' })
     }
@@ -135,7 +135,7 @@ export async function updateStatus(req, res) {
 
 export async function getMyStores(req, res) {
   try {
-    const patron = await Patron.findOne({ profile: req.user._id }).populate({
+    const patron = await Patron.findOne({ profile: req.user.profileId }).populate({
       path: 'businesses',
       populate: { path: 'profile', select: 'name photo' },
     })
@@ -149,7 +149,7 @@ export async function getMyStores(req, res) {
 export async function getMyConnectionStatus(req, res) {
   try {
     const { businessId } = req.params
-    const conn = await Connection.findOne({ patron: req.user._id, business: businessId })
+    const conn = await Connection.findOne({ patron: req.user.profileId, business: businessId })
     res.json(conn || { status: 'none' })
   } catch (err) {
     res.status(500).json({ err: err.message })
