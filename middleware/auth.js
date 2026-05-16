@@ -1,51 +1,36 @@
 import jwt from 'jsonwebtoken'
 
-const SECRET = process.env.SECRET
-import { AUTH_LEVELS } from '../models/profile.js'
-
-function checkAdmin(req, res, next) {
-  if (req.user?.profile?.authorizationLevel === AUTH_LEVELS.ADMIN) {
-    return next()
-  }
-  return res.status(403).json({ err: 'Admins only' })
-}
-
-function checkBusiness(req, res, next) {
-  if (req.user?.profile?.authorizationLevel === AUTH_LEVELS.BUSINESS) {
-    return next()
-  }
-  return res.status(403).json({ err: 'Business only' })
-}
-
-function checkDistributor(req, res, next) {
-  if (req.user?.profile?.authorizationLevel === AUTH_LEVELS.DISTRIBUTOR) {
-    return next()
-  }
-  return res.status(403).json({ err: 'Distributors only' })
-}
-
-function checkPatron(req, res, next) {
-  if (req.user?.profile?.authorizationLevel === AUTH_LEVELS.PATRON) {
-    return next()
-  }
-  return res.status(403).json({ err: 'Patrons only' })
-}
-
-const decodeUserFromToken = (req, res, next) => {
+export function decodeUserFromToken(req, res, next) {
   let token = req.get('Authorization') || req.query.token || req.body.token
   if (!token) return next()
-
   token = token.replace('Bearer ', '')
-  jwt.verify(token, SECRET, (err, decoded) => {
+  jwt.verify(token, process.env.SECRET, (err, decoded) => {
     if (err) return next(err)
-
-    req.user = decoded.user
+    req.user = decoded
     next()
   })
 }
 
-function checkAuth(req, res, next) {
+export function checkAuth(req, res, next) {
   return req.user ? next() : res.status(401).json({ err: 'Not Authorized' })
 }
 
-export { decodeUserFromToken, checkAuth, checkAdmin, checkBusiness, checkPatron, checkDistributor }
+export function checkBusiness(req, res, next) {
+  if (req.user?.authorizationLevel >= 250) return next()
+  return res.status(403).json({ err: 'Business access required' })
+}
+
+export function checkPatron(req, res, next) {
+  if (req.user?.authorizationLevel >= 150 && req.user?.authorizationLevel < 250) return next()
+  return res.status(403).json({ err: 'Patron access required' })
+}
+
+export function checkDistributor(req, res, next) {
+  if (req.user?.authorizationLevel >= 500) return next()
+  return res.status(403).json({ err: 'Distributor access required' })
+}
+
+export function checkAdmin(req, res, next) {
+  if (req.user?.authorizationLevel === 100) return next()
+  return res.status(403).json({ err: 'Admin access required' })
+}
