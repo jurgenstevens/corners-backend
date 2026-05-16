@@ -11,6 +11,12 @@ const ROLE_TO_AUTH_LEVEL = {
   Distributor: AUTH_LEVELS.DISTRIBUTOR,
 }
 
+function normalizeRole(raw) {
+  if (!raw) return ''
+  const lower = raw.toLowerCase()
+  return lower.charAt(0).toUpperCase() + lower.slice(1)
+}
+
 function createJWT(user) {
   if (!user.profile) throw new Error('User profile not populated before creating JWT')
   return jwt.sign(
@@ -40,16 +46,16 @@ export async function signup(req, res) {
   try {
     if (!process.env.SECRET) throw new Error('no SECRET in back-end .env')
 
-    const { name, email, password, role, zip, city, state, businessType, visibility } = req.body
+    const { name, email, password, zip, city, state, businessType, visibility } = req.body
+    const role = normalizeRole(req.body.role)
 
     const authorizationLevel = ROLE_TO_AUTH_LEVEL[role]
-    if (!authorizationLevel) return res.status(400).json({ err: 'Invalid role' })
+    if (!authorizationLevel) return res.status(400).json({ err: `Invalid role: "${req.body.role}"` })
 
     const existingUser = await User.findOne({ email })
     if (existingUser) throw new Error('Account already exists')
 
     const newProfile = await Profile.create({ name, email, authorizationLevel })
-
     const newUser = await User.create({ email, password, profile: newProfile._id })
 
     if (authorizationLevel === AUTH_LEVELS.BUSINESS) {
