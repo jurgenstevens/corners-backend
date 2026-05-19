@@ -23,7 +23,10 @@ export async function indexForPatron(req, res) {
     const products = await Product.find({
       business: { $in: profileIds },
       isActive: true,
-      status: { $in: ['approved', 'ready_to_stock', 'stocked'] },
+      $or: [
+        { status: { $in: ['approved', 'ready_to_stock', 'stocked'] } },
+        { status: 'pending', requestedBy: req.user.profileId },
+      ],
     }).sort('-createdAt')
 
     res.json(products)
