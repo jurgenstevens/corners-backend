@@ -27,7 +27,7 @@ export async function indexForPatron(req, res) {
         { status: { $in: ['approved', 'ready_to_stock', 'stocked'] } },
         { status: 'pending', requestedBy: req.user.profileId },
       ],
-    }).sort('-createdAt')
+    }).populate('business', 'name photo').sort('-createdAt')
 
     res.json(products)
   } catch (err) {
