@@ -8,7 +8,8 @@ export async function nearby(req, res) {
     const patron = await Patron.findOne({ profile: req.user.profileId })
     if (!patron) return res.status(404).json({ err: 'Patron profile not found' })
 
-    const zipPrefix = (patron.location?.zip || '').slice(0, 3)
+    const searchZip = req.query.zip || patron.location?.zip || ''
+    const zipPrefix = searchZip.slice(0, 3)
     if (!zipPrefix) return res.json([])
 
     const existing = await Connection.find({ patron: req.user.profileId }).select('business')
