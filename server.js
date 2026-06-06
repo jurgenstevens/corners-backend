@@ -8,8 +8,10 @@ import './config/database.js'
 
 import { router as profilesRouter } from './routes/profiles.js'
 import { router as authRouter } from './routes/auth.js'
-import { router as productsRouter } from './routes/products.js'
-import { router as requestsRouter } from './routes/requests.js'
+import productsRouter from './routes/products.js'
+import connectionsRouter from './routes/connections.js'
+import businessesRouter from './routes/businesses.js'
+import notificationsRouter from './routes/notifications.js'
 
 const app = express()
 
@@ -21,7 +23,9 @@ app.use(formData.parse())
 app.use('/api/profiles', profilesRouter)
 app.use('/api/auth', authRouter)
 app.use('/api/products', productsRouter)
-app.use('/api/requests', requestsRouter)
+app.use('/api/connections', connectionsRouter)
+app.use('/api/businesses', businessesRouter)
+app.use('/api/notifications', notificationsRouter)
 
 app.use(function (req, res, next) {
   res.status(404).json({ err: 'Not found' })

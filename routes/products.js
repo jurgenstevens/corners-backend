@@ -1,14 +1,16 @@
 import { Router } from 'express'
-import { decodeUserFromToken, checkAuth, checkBusiness } from '../middleware/auth.js'
-import * as productsCtrl from '../controllers/products.js'
+import * as ctrl from '../controllers/products.js'
+import { decodeUserFromToken, checkBusiness, checkPatron } from '../middleware/auth.js'
 
 const router = Router()
-router.use(decodeUserFromToken)
 
-router.get('/', checkAuth, productsCtrl.indexAll)
-router.get('/my', checkAuth, checkBusiness, productsCtrl.index)
-router.post('/', checkAuth, checkBusiness, productsCtrl.create)
-router.put('/:id', checkAuth, checkBusiness, productsCtrl.update)
-router.delete('/:id', checkAuth, checkBusiness, productsCtrl.destroy)
+router.get('/patron', decodeUserFromToken, checkPatron, ctrl.indexForPatron)
+router.get('/', decodeUserFromToken, checkBusiness, ctrl.index)
+router.post('/', decodeUserFromToken, checkBusiness, ctrl.create)
+router.post('/request/:businessId', decodeUserFromToken, checkPatron, ctrl.requestProduct)
+router.post('/:id/vote', decodeUserFromToken, checkPatron, ctrl.vote)
+router.put('/:id/status', decodeUserFromToken, checkBusiness, ctrl.updateStatus)
+router.put('/:id', decodeUserFromToken, checkBusiness, ctrl.update)
+router.delete('/:id', decodeUserFromToken, checkBusiness, ctrl.destroy)
 
-export { router }
+export default router
