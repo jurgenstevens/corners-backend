@@ -9,7 +9,7 @@ const productSchema = new Schema({
   image: { type: String },
   business: { type: Schema.Types.ObjectId, ref: 'Profile', required: true },
   tallyGoal: { type: Number, default: 10 },
-  currentTally: { type: Number, default: 1 },
+  currentTally: { type: Number, default: 0 },
   votedBy: [{ type: Schema.Types.ObjectId, ref: 'Profile' }],
   status: {
     type: String,

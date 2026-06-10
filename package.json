@@ -16,6 +16,7 @@
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.3.3",
     "morgan": "^1.10.0",
-    "nodemon": "^3.1.11"
+    "nodemon": "^3.1.11",
+    "zipcodes": "^8.0.0"
   }
 }

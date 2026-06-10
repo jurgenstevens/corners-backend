@@ -9,6 +9,7 @@ router.post('/request/:businessId', decodeUserFromToken, checkPatron, ctrl.reque
 router.post('/dismiss/:businessId', decodeUserFromToken, checkPatron, ctrl.dismiss)
 router.get('/my-stores', decodeUserFromToken, checkPatron, ctrl.getMyStores)
 router.get('/status/:businessId', decodeUserFromToken, checkPatron, ctrl.getMyConnectionStatus)
+router.delete('/disconnect/:businessId', decodeUserFromToken, checkPatron, ctrl.disconnect)
 router.get('/pending', decodeUserFromToken, checkBusiness, ctrl.getPending)
 router.put('/:connectionId/status', decodeUserFromToken, checkBusiness, ctrl.updateStatus)
 
