@@ -58,6 +58,8 @@ export async function requestProduct(req, res) {
       ...req.body,
       business: business.profile,
       requestedBy: req.user.profileId,
+      votedBy: [req.user.profileId],
+      currentTally: 1,
       status: 'pending',
     })
     console.log('requestProduct — product created:', product._id)
