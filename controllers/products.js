@@ -47,6 +47,7 @@ export async function create(req, res) {
 export async function requestProduct(req, res) {
   try {
     const { businessId } = req.params
+    console.log('requestProduct — businessId:', businessId, '| patron:', req.user.profileId)
     const business = await Business.findById(businessId)
     if (!business) return res.status(404).json({ err: 'Business not found' })
 
@@ -59,9 +60,46 @@ export async function requestProduct(req, res) {
       requestedBy: req.user.profileId,
       status: 'pending',
     })
+    console.log('requestProduct — product created:', product._id)
+
+    await Notification.create({
+      recipient: business.profile,
+      type: 'product_request',
+      message: `A patron has requested a product: "${product.name}"`,
+      relatedId: product._id,
+    })
 
     res.status(201).json(product)
   } catch (err) {
+    console.log('requestProduct — ERROR:', err.message)
+    res.status(500).json({ err: err.message })
+  }
+}
+
+export async function indexForPatronByBusiness(req, res) {
+  try {
+    const { businessId } = req.params
+    console.log('indexForPatronByBusiness — businessId:', businessId, '| patron:', req.user.profileId)
+
+    const business = await Business.findById(businessId)
+    if (!business) return res.status(404).json({ err: 'Business not found' })
+
+    const conn = await Connection.findOne({ patron: req.user.profileId, business: businessId, status: 'approved' })
+    if (!conn) return res.status(403).json({ err: 'Not connected to this business' })
+
+    const products = await Product.find({
+      business: business.profile,
+      isActive: true,
+      $or: [
+        { status: { $in: ['approved', 'ready_to_stock', 'stocked'] } },
+        { status: 'pending', requestedBy: req.user.profileId },
+      ],
+    }).sort('-createdAt')
+
+    console.log('indexForPatronByBusiness — products found:', products.length)
+    res.json(products)
+  } catch (err) {
+    console.log('indexForPatronByBusiness — ERROR:', err.message)
     res.status(500).json({ err: err.message })
   }
 }

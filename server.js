@@ -12,6 +12,7 @@ import productsRouter from './routes/products.js'
 import connectionsRouter from './routes/connections.js'
 import businessesRouter from './routes/businesses.js'
 import notificationsRouter from './routes/notifications.js'
+import patronsRouter from './routes/patrons.js'
 
 const app = express()
 
@@ -26,6 +27,7 @@ app.use('/api/products', productsRouter)
 app.use('/api/connections', connectionsRouter)
 app.use('/api/businesses', businessesRouter)
 app.use('/api/notifications', notificationsRouter)
+app.use('/api/patrons', patronsRouter)
 
 app.use(function (req, res, next) {
   res.status(404).json({ err: 'Not found' })
