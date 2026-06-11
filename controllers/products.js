@@ -3,9 +3,13 @@ import Connection from '../models/connection.js'
 import Business from '../models/business.js'
 import Notification from '../models/notification.js'
 
+// GET /api/products — returns all active products for the authenticated business,
+// populating requestedBy so the owner can see which patron submitted each request
 export async function index(req, res) {
   try {
-    const products = await Product.find({ business: req.user.profileId, isActive: true }).sort('-createdAt')
+    const products = await Product.find({ business: req.user.profileId, isActive: true })
+      .populate('requestedBy', 'name')
+      .sort('-createdAt')
     res.json(products)
   } catch (err) {
     res.status(500).json({ err: err.message })
