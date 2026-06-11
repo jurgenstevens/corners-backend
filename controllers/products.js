@@ -48,6 +48,8 @@ export async function create(req, res) {
   }
 }
 
+// POST /api/products/request/:businessId — patron submits a product request for a specific business.
+// Requires an approved connection; creates the product with status 'pending' and notifies the business owner.
 export async function requestProduct(req, res) {
   try {
     const { businessId } = req.params
@@ -55,8 +57,12 @@ export async function requestProduct(req, res) {
     const business = await Business.findById(businessId)
     if (!business) return res.status(404).json({ err: 'Business not found' })
 
+    // verify the patron has an approved connection to this business before allowing a request
     const conn = await Connection.findOne({ patron: req.user.profileId, business: businessId, status: 'approved' })
-    if (!conn) return res.status(403).json({ err: 'You must be connected to this business to request a product' })
+    if (!conn) {
+      console.log('requestProduct — no approved connection found for patron:', req.user.profileId, '| business:', businessId)
+      return res.status(403).json({ err: 'You must be connected to this business to request a product' })
+    }
 
     const product = await Product.create({
       ...req.body,
