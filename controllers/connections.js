@@ -31,7 +31,16 @@ export async function nearby(req, res) {
     }).populate('profile', 'name photo')
 
     console.log('nearby — businesses found:', businesses.length)
-    res.json(businesses)
+
+    // attach driving distance in miles from the search zip to each business so the
+    // frontend can offer a "Sort: Nearby" option without an extra round-trip
+    const withDistance = businesses.map(b => {
+      const dist = b.location?.zip ? zipcodes.distance(searchZip, b.location.zip) : null
+      return { ...b.toObject(), distance: dist != null ? Math.round(dist * 10) / 10 : null }
+    })
+
+    withDistance.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity))
+    res.json(withDistance)
   } catch (err) {
     console.log('nearby — ERROR:', err.message)
     res.status(500).json({ err: err.message })
