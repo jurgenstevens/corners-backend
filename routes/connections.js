@@ -12,5 +12,6 @@ router.get('/status/:businessId', decodeUserFromToken, checkPatron, ctrl.getMyCo
 router.delete('/disconnect/:businessId', decodeUserFromToken, checkPatron, ctrl.disconnect)
 router.get('/pending', decodeUserFromToken, checkBusiness, ctrl.getPending)
 router.put('/:connectionId/status', decodeUserFromToken, checkBusiness, ctrl.updateStatus)
+router.delete('/:connectionId', decodeUserFromToken, checkBusiness, ctrl.deleteConnection)
 
 export default router

@@ -120,6 +120,11 @@ export async function updateStatus(req, res) {
         { profile: conn.patron },
         { $addToSet: { businesses: business._id } }
       )
+    } else if (status === 'denied' || status === 'blocked') {
+      await Patron.findOneAndUpdate(
+        { profile: conn.patron },
+        { $pull: { businesses: business._id } }
+      )
     }
 
     const typeMap = { approved: 'connection_approved', denied: 'connection_denied', blocked: 'connection_blocked' }
@@ -165,6 +170,29 @@ export async function getMyConnectionStatus(req, res) {
     const { businessId } = req.params
     const conn = await Connection.findOne({ patron: req.user.profileId, business: businessId })
     res.json(conn || { status: 'none' })
+  } catch (err) {
+    res.status(500).json({ err: err.message })
+  }
+}
+
+export async function deleteConnection(req, res) {
+  try {
+    const { connectionId } = req.params
+    const conn = await Connection.findById(connectionId)
+    if (!conn) return res.status(404).json({ err: 'Connection not found' })
+
+    const business = await Business.findOne({ profile: req.user.profileId })
+    if (!business || conn.business.toString() !== business._id.toString()) {
+      return res.status(403).json({ err: 'Not authorized' })
+    }
+
+    await Connection.findByIdAndDelete(connectionId)
+    await Patron.findOneAndUpdate(
+      { profile: conn.patron },
+      { $pull: { businesses: business._id } }
+    )
+
+    res.json({ message: 'Connection deleted' })
   } catch (err) {
     res.status(500).json({ err: err.message })
   }
