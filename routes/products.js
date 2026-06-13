@@ -5,6 +5,7 @@ import { decodeUserFromToken, checkBusiness, checkPatron } from '../middleware/a
 const router = Router()
 
 router.get('/patron', decodeUserFromToken, checkPatron, ctrl.indexForPatron)
+router.get('/patron/promotions', decodeUserFromToken, checkPatron, ctrl.indexPromotionsForPatron)
 router.get('/by-business/:businessId', decodeUserFromToken, checkPatron, ctrl.indexForPatronByBusiness)
 router.get('/', decodeUserFromToken, checkBusiness, ctrl.index)
 router.post('/', decodeUserFromToken, checkBusiness, ctrl.create)

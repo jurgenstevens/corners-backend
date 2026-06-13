@@ -40,6 +40,26 @@ export async function indexForPatron(req, res) {
   }
 }
 
+export async function indexPromotionsForPatron(req, res) {
+  try {
+    const connections = await Connection.find({ patron: req.user.profileId, status: 'approved' }).select('business')
+    const businessIds = connections.map(c => c.business)
+
+    const businesses = await Business.find({ _id: { $in: businessIds } }).select('profile displayName')
+    const profileIds = businesses.map(b => b.profile)
+
+    const products = await Product.find({
+      business: { $in: profileIds },
+      status: 'on_sale',
+      isActive: true,
+    }).populate('business', 'name photo').sort('-updatedAt')
+
+    res.json(products)
+  } catch (err) {
+    res.status(500).json({ err: err.message })
+  }
+}
+
 export async function create(req, res) {
   try {
     const product = await Product.create({ ...req.body, business: req.user.profileId })
