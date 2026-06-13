@@ -13,4 +13,7 @@ const notificationSchema = new Schema({
   relatedId: { type: Schema.Types.ObjectId },
 }, { timestamps: true })
 
+// Auto-delete notifications after 14 days
+notificationSchema.index({ createdAt: 1 }, { expireAfterSeconds: 14 * 24 * 60 * 60 })
+
 export default mongoose.model('Notification', notificationSchema)
