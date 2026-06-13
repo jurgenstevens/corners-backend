@@ -9,6 +9,7 @@ export async function index(req, res) {
   try {
     const products = await Product.find({ business: req.user.profileId, isActive: true })
       .populate('requestedBy', 'name')
+      .populate('votedBy', 'name')
       .sort('-createdAt')
     res.json(products)
   } catch (err) {
@@ -29,7 +30,7 @@ export async function indexForPatron(req, res) {
       isActive: true,
       $or: [
         { status: { $in: ['approved', 'ready_to_stock', 'stocked'] } },
-        { status: 'pending', requestedBy: req.user.profileId },
+        { status: { $in: ['pending', 'needs_info'] }, requestedBy: req.user.profileId },
       ],
     }).populate('business', 'name photo').sort('-createdAt')
 
@@ -104,7 +105,7 @@ export async function indexForPatronByBusiness(req, res) {
       isActive: true,
       $or: [
         { status: { $in: ['approved', 'ready_to_stock', 'stocked'] } },
-        { status: 'pending', requestedBy: req.user.profileId },
+        { status: { $in: ['pending', 'needs_info'] }, requestedBy: req.user.profileId },
       ],
     }).sort('-createdAt')
 
@@ -200,6 +201,56 @@ export async function destroy(req, res) {
       { isActive: false }
     )
     res.json({ message: 'Product removed' })
+  } catch (err) {
+    res.status(500).json({ err: err.message })
+  }
+}
+
+// POST /api/products/:id/request-info — business asks patron to update their product request
+export async function requestInfo(req, res) {
+  try {
+    const product = await Product.findOne({ _id: req.params.id, business: req.user.profileId })
+    if (!product) return res.status(404).json({ err: 'Product not found' })
+    if (!product.requestedBy) return res.status(400).json({ err: 'Not a patron request' })
+
+    product.status = 'needs_info'
+    await product.save()
+
+    await Notification.create({
+      recipient: product.requestedBy,
+      type: 'product_needs_info',
+      message: `The store is requesting more information about your product request: "${product.name}". Please update it.`,
+      relatedId: product._id,
+    })
+
+    res.json(product)
+  } catch (err) {
+    res.status(500).json({ err: err.message })
+  }
+}
+
+// PUT /api/products/:id/patron-update — patron updates their own request and resubmits
+export async function patronUpdate(req, res) {
+  try {
+    const product = await Product.findOne({ _id: req.params.id, requestedBy: req.user.profileId })
+    if (!product) return res.status(404).json({ err: 'Product not found' })
+
+    const { name, brand, description, image } = req.body
+    if (name) product.name = name
+    if (brand !== undefined) product.brand = brand
+    if (description !== undefined) product.description = description
+    if (image !== undefined) product.image = image
+    product.status = 'pending'
+    await product.save()
+
+    await Notification.create({
+      recipient: product.business,
+      type: 'product_updated',
+      message: `A patron has updated their product request: "${product.name}".`,
+      relatedId: product._id,
+    })
+
+    res.json(product)
   } catch (err) {
     res.status(500).json({ err: err.message })
   }

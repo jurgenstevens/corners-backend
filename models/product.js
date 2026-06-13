@@ -13,7 +13,7 @@ const productSchema = new Schema({
   votedBy: [{ type: Schema.Types.ObjectId, ref: 'Profile' }],
   status: {
     type: String,
-    enum: ['pending', 'approved', 'rejected', 'ready_to_stock', 'stocked'],
+    enum: ['pending', 'approved', 'rejected', 'ready_to_stock', 'stocked', 'needs_info'],
     default: 'pending'
   },
   requestedBy: { type: Schema.Types.ObjectId, ref: 'Profile' },
