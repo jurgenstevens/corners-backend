@@ -255,3 +255,33 @@ export async function patronUpdate(req, res) {
     res.status(500).json({ err: err.message })
   }
 }
+
+// POST /api/products/:id/promote — move a stocked product to on_sale with a discounted price
+export async function promoteProduct(req, res) {
+  try {
+    const product = await Product.findOne({ _id: req.params.id, business: req.user.profileId })
+    if (!product) return res.status(404).json({ err: 'Product not found' })
+    if (product.status !== 'stocked') return res.status(400).json({ err: 'Only stocked products can be promoted' })
+
+    const { salePrice, discountPercent } = req.body
+    if (salePrice == null && discountPercent == null) {
+      return res.status(400).json({ err: 'Provide either salePrice or discountPercent' })
+    }
+
+    if (discountPercent != null) {
+      product.discountPercent = discountPercent
+      product.salePrice = parseFloat((product.price * (1 - discountPercent / 100)).toFixed(2))
+    } else {
+      product.salePrice = salePrice
+      if (product.price) {
+        product.discountPercent = parseFloat((((product.price - salePrice) / product.price) * 100).toFixed(1))
+      }
+    }
+
+    product.status = 'on_sale'
+    await product.save()
+    res.json(product)
+  } catch (err) {
+    res.status(500).json({ err: err.message })
+  }
+}

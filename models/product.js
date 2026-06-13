@@ -13,9 +13,11 @@ const productSchema = new Schema({
   votedBy: [{ type: Schema.Types.ObjectId, ref: 'Profile' }],
   status: {
     type: String,
-    enum: ['pending', 'approved', 'rejected', 'ready_to_stock', 'stocked', 'needs_info'],
+    enum: ['pending', 'approved', 'rejected', 'ready_to_stock', 'stocked', 'needs_info', 'on_sale'],
     default: 'pending'
   },
+  salePrice: { type: Number },
+  discountPercent: { type: Number },
   requestedBy: { type: Schema.Types.ObjectId, ref: 'Profile' },
   isActive: { type: Boolean, default: true },
 }, { timestamps: true })
