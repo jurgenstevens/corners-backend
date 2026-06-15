@@ -150,12 +150,12 @@ export async function vote(req, res) {
     product.currentTally = product.votedBy.length
 
     if (product.currentTally >= product.tallyGoal && product.status === 'approved') {
-      product.status = 'ready_to_stock'
+      product.status = 'stocked'
       if (product.requestedBy) {
         await Notification.create({
           recipient: product.requestedBy,
-          type: 'product_ready',
-          message: `"${product.name}" has reached its tally goal and is ready to stock!`,
+          type: 'product_stocked',
+          message: `"${product.name}" has reached its tally goal and is now in stock!`,
           relatedId: product._id,
         })
       }
@@ -178,7 +178,7 @@ export async function updateStatus(req, res) {
     await product.save()
 
     if (product.requestedBy) {
-      const typeMap = { approved: 'product_approved', rejected: 'product_rejected', stocked: 'product_ready' }
+      const typeMap = { approved: 'product_approved', rejected: 'product_rejected', stocked: 'product_stocked' }
       const msgMap = {
         approved: `Your product request "${product.name}" was approved!`,
         rejected: `Your product request "${product.name}" was not approved.`,
