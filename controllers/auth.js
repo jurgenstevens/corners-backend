@@ -4,6 +4,7 @@ const { User } = UserModel
 import { Profile, AUTH_LEVELS } from '../models/profile.js'
 import Business from '../models/business.js'
 import Patron from '../models/patron.js'
+import { Distributor } from '../models/distributor.js'
 
 const ROLE_TO_AUTH_LEVEL = {
   Patron: AUTH_LEVELS.PATRON,
@@ -70,6 +71,8 @@ export async function signup(req, res) {
         profile: newProfile._id,
         location: { zip: zip || '', city: city || '', state: state || '' },
       })
+    } else if (authorizationLevel === AUTH_LEVELS.DISTRIBUTOR) {
+      await Distributor.create({ profile: newProfile._id })
     }
 
     const populatedUser = await User.findById(newUser._id).populate('profile')
