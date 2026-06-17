@@ -110,3 +110,41 @@ export async function deleteProduct(req, res) {
     res.status(500).json({ err: err.message })
   }
 }
+
+export async function createProduct(req, res) {
+  try {
+    const product = await DistributorProduct.create({
+      ...req.body,
+      distributor: req.user.profileId,
+      isActive: true,
+    })
+    res.status(201).json(product)
+  } catch (err) {
+    res.status(500).json({ err: err.message })
+  }
+}
+
+export async function getMyDistributor(req, res) {
+  try {
+    const distributor = await Distributor.findOne({ profile: req.user.profileId })
+    if (!distributor) return res.status(404).json({ err: 'Distributor not found' })
+    res.json(distributor)
+  } catch (err) {
+    res.status(500).json({ err: err.message })
+  }
+}
+
+export async function updateDistributor(req, res) {
+  try {
+    const { companyName, serviceRegions, categories } = req.body
+    const distributor = await Distributor.findOneAndUpdate(
+      { profile: req.user.profileId },
+      { companyName, serviceRegions, categories },
+      { new: true }
+    )
+    if (!distributor) return res.status(404).json({ err: 'Distributor not found' })
+    res.json(distributor)
+  } catch (err) {
+    res.status(500).json({ err: err.message })
+  }
+}

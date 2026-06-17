@@ -7,8 +7,11 @@ const router = Router()
 
 router.post('/catalog/upload', decodeUserFromToken, checkDistributor, uploadPDF, ctrl.uploadCatalog)
 router.get('/catalog/mine', decodeUserFromToken, checkDistributor, ctrl.getCatalogForDistributor)
+router.post('/catalog/mine', decodeUserFromToken, checkDistributor, ctrl.createProduct)
 router.put('/catalog/:productId', decodeUserFromToken, checkDistributor, ctrl.updateProduct)
 router.delete('/catalog/:productId', decodeUserFromToken, checkDistributor, ctrl.deleteProduct)
+router.get('/me', decodeUserFromToken, checkDistributor, ctrl.getMyDistributor)
+router.put('/me', decodeUserFromToken, checkDistributor, ctrl.updateDistributor)
 
 router.get('/nearby', decodeUserFromToken, checkBusiness, ctrl.getNearby)
 router.get('/:id', decodeUserFromToken, checkBusiness, ctrl.getById)

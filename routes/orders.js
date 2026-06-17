@@ -9,6 +9,7 @@ router.get('/business', decodeUserFromToken, checkBusiness, ctrl.getBusinessOrde
 router.get('/distributor', decodeUserFromToken, checkDistributor, ctrl.getDistributorOrders)
 router.put('/:orderId/quote', decodeUserFromToken, checkDistributor, ctrl.quote)
 router.put('/:orderId/accept', decodeUserFromToken, checkBusiness, ctrl.accept)
+router.put('/:orderId/cancel', decodeUserFromToken, checkBusiness, ctrl.cancelOrder)
 router.put('/:orderId/status', decodeUserFromToken, checkDistributor, ctrl.updateStatus)
 
 export default router

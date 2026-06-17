@@ -134,6 +134,24 @@ export async function accept(req, res) {
   }
 }
 
+export async function cancelOrder(req, res) {
+  try {
+    const order = await Order.findById(req.params.orderId)
+    if (!order) return res.status(404).json({ err: 'Order not found' })
+    if (order.business.toString() !== req.user.profileId.toString()) {
+      return res.status(403).json({ err: 'Not authorized' })
+    }
+    if (['delivered', 'picked_up', 'cancelled', 'declined'].includes(order.status)) {
+      return res.status(400).json({ err: 'Cannot cancel a completed order' })
+    }
+    order.status = 'cancelled'
+    await order.save()
+    res.json(order)
+  } catch (err) {
+    res.status(500).json({ err: err.message })
+  }
+}
+
 export async function updateStatus(req, res) {
   try {
     const { status } = req.body
