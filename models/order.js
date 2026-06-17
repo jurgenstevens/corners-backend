@@ -1,62 +1,31 @@
 import mongoose from 'mongoose'
-const Schema = mongoose.Schema
-
-const orderItemSchema = new Schema({
-  product: {
-    type: Schema.Types.ObjectId,
-    ref: 'Product',
-    required: true,
-  },
-
-  // Snapshot values at time of order
-  nameSnapshot: String,
-  priceSnapshot: Number,
-
-  quantity: {
-    type: Number,
-    required: true,
-    min: 1,
-  },
-})
+const { Schema } = mongoose
 
 const orderSchema = new Schema({
-  patron: {
-    type: Schema.Types.ObjectId,
-    ref: 'Patron',
-    required: true,
-  },
-
-  business: {
-    type: Schema.Types.ObjectId,
-    ref: 'Business',
-    required: true,
-  },
-
-  distributor: {
-    type: Schema.Types.ObjectId,
-    ref: 'Distributor',
-  },
-
-  items: [orderItemSchema],
-
+  business: { type: Schema.Types.ObjectId, ref: 'Profile', required: true },
+  distributor: { type: Schema.Types.ObjectId, ref: 'Profile', required: true },
+  items: [{
+    product: { type: Schema.Types.ObjectId, ref: 'DistributorProduct' },
+    name: { type: String },
+    unitSize: { type: String },
+    priceAtOrder: { type: Number },
+    quantity: { type: Number },
+  }],
   status: {
     type: String,
-    enum: [
-      'pending',
-      'accepted',
-      'processing',
-      'shipped',
-      'fulfilled',
-      'cancelled',
-    ],
+    enum: ['pending', 'quoted', 'accepted', 'paid', 'in_transit', 'delivered', 'ready_for_pickup', 'picked_up', 'cancelled', 'declined'],
     default: 'pending',
   },
-
-  totalAmount: Number,
-
-  notes: String,
-
+  fulfillmentType: { type: String, enum: ['delivery', 'pickup'], default: 'delivery' },
+  deliveryAddress: { type: String },
+  preferredWindow: { type: String },
+  notes: { type: String },
+  estimatedTotal: { type: Number },
+  deliveryFee: { type: Number },
+  eta: { type: Date },
+  pickupAddress: { type: String },
+  pickupWindow: { type: String },
+  distributorNotes: { type: String },
 }, { timestamps: true })
 
-const Order = mongoose.model('Order', orderSchema)
-export { Order }
+export default mongoose.model('Order', orderSchema)

@@ -13,6 +13,8 @@ import connectionsRouter from './routes/connections.js'
 import businessesRouter from './routes/businesses.js'
 import notificationsRouter from './routes/notifications.js'
 import patronsRouter from './routes/patrons.js'
+import distributorsRouter from './routes/distributors.js'
+import ordersRouter from './routes/orders.js'
 
 const app = express()
 
@@ -28,6 +30,8 @@ app.use('/api/connections', connectionsRouter)
 app.use('/api/businesses', businessesRouter)
 app.use('/api/notifications', notificationsRouter)
 app.use('/api/patrons', patronsRouter)
+app.use('/api/distributors', distributorsRouter)
+app.use('/api/orders', ordersRouter)
 
 app.use(function (req, res, next) {
   res.status(404).json({ err: 'Not found' })

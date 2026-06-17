@@ -25,6 +25,10 @@ const distributorSchema = new Schema({
 
   serviceRegions: [String],
 
+  categories: [String],
+
+  stripeAccountId: { type: String },
+
   isActive: {
     type: Boolean,
     default: true,
