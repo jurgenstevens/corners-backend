@@ -17,6 +17,7 @@ import distributorsRouter from './routes/distributors.js'
 import ordersRouter from './routes/orders.js'
 
 const app = express()
+app.disable('x-powered-by')
 
 app.use(cors())
 app.use(logger('dev'))
