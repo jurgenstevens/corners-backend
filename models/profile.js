@@ -33,17 +33,24 @@ const profileSchema = new Schema({
     index: true,
   },
 
-  // Soft permissions / feature flags if needed later
-  flags: {
-    type: [String],
-    default: [],
-  },
-
   isActive: {
     type: Boolean,
     default: true,
     index: true,
   },
+
+  isBanned: { type: Boolean, default: false },
+  isSuspended: { type: Boolean, default: false },
+  suspendedUntil: { type: Date },
+  suspensionReason: { type: String },
+  banReason: { type: String },
+  bannedAt: { type: Date },
+  flags: [{
+    reason: String,
+    flaggedBy: { type: Schema.Types.ObjectId, ref: 'Profile' },
+    flaggedAt: { type: Date, default: Date.now },
+    resolved: { type: Boolean, default: false },
+  }],
 
 }, { timestamps: true })
 

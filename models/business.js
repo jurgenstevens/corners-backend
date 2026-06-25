@@ -28,6 +28,13 @@ const businessSchema = new Schema({
   reviewCount: { type: Number, default: 0 },
   visibility: { type: String, enum: ['public', 'private'], default: 'public' },
   isActive: { type: Boolean, default: true },
+  verificationStatus: {
+    type: String,
+    enum: ['unverified', 'pending_verification', 'verified', 'rejected'],
+    default: 'unverified',
+  },
+  verificationDocuments: [String],
+  verificationNotes: String,
 }, { timestamps: true })
 
 export default mongoose.model('Business', businessSchema)

@@ -15,6 +15,11 @@ import notificationsRouter from './routes/notifications.js'
 import patronsRouter from './routes/patrons.js'
 import distributorsRouter from './routes/distributors.js'
 import ordersRouter from './routes/orders.js'
+import adminRouter from './routes/admin.js'
+import bugReportsRouter from './routes/bugReports.js'
+import messagesRouter from './routes/messages.js'
+import { decodeUserFromToken, checkNotBanned } from './middleware/auth.js'
+import { startCleanupJobs } from './jobs/cleanupRejectedProducts.js'
 
 const app = express()
 app.disable('x-powered-by')
@@ -24,15 +29,20 @@ app.use(logger('dev'))
 app.use(express.json())
 app.use(formData.parse())
 
-app.use('/api/profiles', profilesRouter)
 app.use('/api/auth', authRouter)
-app.use('/api/products', productsRouter)
-app.use('/api/connections', connectionsRouter)
-app.use('/api/businesses', businessesRouter)
-app.use('/api/notifications', notificationsRouter)
-app.use('/api/patrons', patronsRouter)
-app.use('/api/distributors', distributorsRouter)
-app.use('/api/orders', ordersRouter)
+app.use('/api/admin', adminRouter)
+app.use('/api/profiles', decodeUserFromToken, checkNotBanned, profilesRouter)
+app.use('/api/products', decodeUserFromToken, checkNotBanned, productsRouter)
+app.use('/api/connections', decodeUserFromToken, checkNotBanned, connectionsRouter)
+app.use('/api/businesses', decodeUserFromToken, checkNotBanned, businessesRouter)
+app.use('/api/notifications', decodeUserFromToken, checkNotBanned, notificationsRouter)
+app.use('/api/patrons', decodeUserFromToken, checkNotBanned, patronsRouter)
+app.use('/api/distributors', decodeUserFromToken, checkNotBanned, distributorsRouter)
+app.use('/api/orders', decodeUserFromToken, checkNotBanned, ordersRouter)
+app.use('/api/bug-reports', decodeUserFromToken, checkNotBanned, bugReportsRouter)
+app.use('/api/messages', messagesRouter)
+
+startCleanupJobs()
 
 app.use(function (req, res, next) {
   res.status(404).json({ err: 'Not found' })

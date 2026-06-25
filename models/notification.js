@@ -5,7 +5,7 @@ const notificationSchema = new Schema({
   recipient: { type: Schema.Types.ObjectId, ref: 'Profile', required: true },
   type: {
     type: String,
-    enum: ['connection_approved', 'connection_denied', 'connection_blocked', 'connection_request', 'product_request', 'product_approved', 'product_rejected', 'product_ready', 'product_needs_info', 'product_updated', 'product_stocked', 'order_request', 'order_quoted', 'order_accepted', 'order_declined', 'order_fulfilled'],
+    enum: ['connection_approved', 'connection_denied', 'connection_blocked', 'connection_request', 'product_request', 'product_approved', 'product_rejected', 'product_ready', 'product_needs_info', 'product_updated', 'product_stocked', 'order_request', 'order_quoted', 'order_accepted', 'order_declined', 'order_fulfilled', 'new_message', 'admin_message'],
     required: true
   },
   message: { type: String, required: true },

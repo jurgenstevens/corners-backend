@@ -1,4 +1,5 @@
 import jwt from 'jsonwebtoken'
+import { Profile } from '../models/profile.js'
 
 export function decodeUserFromToken(req, res, next) {
   let token = req.get('Authorization') || req.query.token || req.body.token
@@ -33,4 +34,21 @@ export function checkDistributor(req, res, next) {
 export function checkAdmin(req, res, next) {
   if (req.user?.authorizationLevel === 100) return next()
   return res.status(403).json({ err: 'Admin access required' })
+}
+
+export async function checkNotBanned(req, res, next) {
+  try {
+    if (!req.user) return next()
+    const profile = await Profile.findById(req.user.profileId).select('isBanned isSuspended suspendedUntil')
+    if (!profile) return next()
+    if (profile.isBanned) {
+      return res.status(403).json({ err: 'Your account has been banned.' })
+    }
+    if (profile.isSuspended && profile.suspendedUntil > new Date()) {
+      return res.status(403).json({ err: `Your account is suspended until ${profile.suspendedUntil.toLocaleDateString()}.` })
+    }
+    next()
+  } catch (err) {
+    next()
+  }
 }

@@ -2,6 +2,8 @@ import Product from '../models/product.js'
 import Connection from '../models/connection.js'
 import Business from '../models/business.js'
 import Notification from '../models/notification.js'
+import VoteAbuseFlag from '../models/voteAbuseFlag.js'
+import { Profile } from '../models/profile.js'
 
 // GET /api/products — returns all active products for the authenticated business,
 // populating requestedBy so the owner can see which patron submitted each request
@@ -162,9 +164,63 @@ export async function vote(req, res) {
     }
 
     await product.save()
+    checkVoteAbuse(req.user.profileId, product._id, product.business)
     res.json(product)
   } catch (err) {
     res.status(500).json({ err: err.message })
+  }
+}
+
+async function checkVoteAbuse(patronId, productId, businessId) {
+  try {
+    const windowStart = new Date(Date.now() - 10 * 60 * 1000)
+
+    const recentVotedProducts = await Product.find({
+      votedBy: patronId,
+      updatedAt: { $gte: windowStart },
+    }).select('_id business')
+
+    const votesInWindow = recentVotedProducts.length
+
+    if (votesInWindow > 8) {
+      await VoteAbuseFlag.findOneAndUpdate(
+        { patron: patronId, reviewed: false, reason: 'rapid_voting' },
+        { patron: patronId, product: productId, business: businessId, reason: 'rapid_voting', votesInWindow, windowMinutes: 10 },
+        { upsert: true, new: true }
+      )
+    }
+
+    const profile = await Profile.findById(patronId).select('createdAt')
+    const accountAgeDays = (Date.now() - new Date(profile.createdAt)) / 86400000
+    const totalVotes = await Product.countDocuments({ votedBy: patronId })
+
+    if (accountAgeDays < 7 && totalVotes > 5) {
+      await VoteAbuseFlag.findOneAndUpdate(
+        { patron: patronId, reviewed: false, reason: 'new_account_burst' },
+        { patron: patronId, product: productId, business: businessId, reason: 'new_account_burst', votesInWindow: totalVotes, windowMinutes: accountAgeDays * 1440 },
+        { upsert: true, new: true }
+      )
+    }
+
+    const allVotedProducts = await Product.find({ votedBy: patronId }).select('business')
+    if (allVotedProducts.length >= 10) {
+      const storeCounts = {}
+      allVotedProducts.forEach(p => {
+        const b = p.business.toString()
+        storeCounts[b] = (storeCounts[b] || 0) + 1
+      })
+      const maxCount = Math.max(...Object.values(storeCounts))
+      const concentration = maxCount / allVotedProducts.length
+      if (concentration > 0.8) {
+        await VoteAbuseFlag.findOneAndUpdate(
+          { patron: patronId, reviewed: false, reason: 'single_store_focus' },
+          { patron: patronId, product: productId, business: businessId, reason: 'single_store_focus', votesInWindow: maxCount, windowMinutes: 0 },
+          { upsert: true, new: true }
+        )
+      }
+    }
+  } catch (err) {
+    console.error('Vote abuse check failed:', err.message)
   }
 }
 
