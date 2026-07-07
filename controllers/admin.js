@@ -132,8 +132,22 @@ export async function verifyBusiness(req, res) {
   try {
     const { notes } = req.body
     const business = await Business.findByIdAndUpdate(
-      req.params.businessId,
-      { verificationStatus: 'verified', verificationNotes: notes },
+      req.params.businessId ?? req.params.id,
+      { verificationStatus: 'approved', verificationNotes: notes },
+      { new: true }
+    )
+    if (!business) return res.status(404).json({ err: 'Business not found' })
+    res.json(business)
+  } catch (err) {
+    res.status(500).json({ err: err.message })
+  }
+}
+
+export async function revokeBusiness(req, res) {
+  try {
+    const business = await Business.findByIdAndUpdate(
+      req.params.id,
+      { verificationStatus: 'pending', verificationNotes: null },
       { new: true }
     )
     if (!business) return res.status(404).json({ err: 'Business not found' })
@@ -182,15 +196,15 @@ export async function getStats(req, res) {
   try {
     const [pendingBusinesses, approvedBusinesses, totalPatrons, abuseFlags, openBugReports, tallyHits] =
       await Promise.all([
-        Business.countDocuments({ verificationStatus: { $in: ['unverified', 'pending_verification'] } }),
-        Business.countDocuments({ verificationStatus: 'verified' }),
+        Business.countDocuments({ verificationStatus: 'pending' }),
+        Business.countDocuments({ verificationStatus: 'approved' }),
         Profile.countDocuments({ authorizationLevel: 150 }),
         VoteAbuseFlag.countDocuments({ reviewed: false, dismissed: false }),
         BugReport.countDocuments({ status: 'open' }),
         Product.countDocuments({ status: { $in: ['ready_to_stock', 'stocked'] } }),
       ])
     const [recentVerified, recentSignups] = await Promise.all([
-      Business.find({ verificationStatus: 'verified' })
+      Business.find({ verificationStatus: 'approved' })
         .populate('profile', 'name email')
         .sort('-updatedAt')
         .limit(5)
@@ -273,20 +287,6 @@ export async function getBusinessDetail(req, res) {
   }
 }
 
-export async function rejectBusiness(req, res) {
-  try {
-    const { notes } = req.body
-    const business = await Business.findByIdAndUpdate(
-      req.params.id,
-      { verificationStatus: 'rejected', verificationNotes: notes },
-      { new: true }
-    )
-    if (!business) return res.status(404).json({ err: 'Business not found' })
-    res.json(business)
-  } catch (err) {
-    res.status(500).json({ err: err.message })
-  }
-}
 
 export async function getZipActivity(req, res) {
   try {
