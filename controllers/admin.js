@@ -4,6 +4,8 @@ import { Profile } from '../models/profile.js'
 import Connection from '../models/connection.js'
 import Business from '../models/business.js'
 import Product from '../models/product.js'
+import UserModel from '../models/user.js'
+const { User } = UserModel
 
 export async function getBugReports(req, res) {
   try {
@@ -157,6 +159,36 @@ export async function revokeBusiness(req, res) {
   }
 }
 
+export async function rejectStore(req, res) {
+  try {
+    const business = await Business.findByIdAndUpdate(
+      req.params.id,
+      { verificationStatus: 'rejected', rejectedAt: new Date() },
+      { new: true }
+    )
+    if (!business) return res.status(404).json({ err: 'Business not found' })
+    res.json(business)
+  } catch (err) {
+    res.status(500).json({ err: err.message })
+  }
+}
+
+async function cleanupRejectedBusinessesInternal() {
+  const cutoff = new Date(Date.now() - 3 * 24 * 60 * 60 * 1000)
+  const stale = await Business.find({ verificationStatus: 'rejected', rejectedAt: { $lt: cutoff } })
+  for (const biz of stale) {
+    await Promise.all([
+      User.findOneAndDelete({ profile: biz.profile }),
+      Connection.deleteMany({ business: biz._id }),
+      VoteAbuseFlag.deleteMany({ business: biz._id }),
+    ])
+    await Promise.all([
+      Profile.findByIdAndDelete(biz.profile),
+      Business.findByIdAndDelete(biz._id),
+    ])
+  }
+}
+
 export async function getProductsHittingTally(req, res) {
   try {
     const products = await Product.find({ status: { $in: ['ready_to_stock', 'stocked'] } })
@@ -194,6 +226,7 @@ export async function getBannedUsers(req, res) {
 
 export async function getStats(req, res) {
   try {
+    cleanupRejectedBusinessesInternal().catch(() => {})
     const [pendingBusinesses, approvedBusinesses, totalPatrons, abuseFlags, openBugReports, tallyHits] =
       await Promise.all([
         Business.countDocuments({ verificationStatus: 'pending' }),
@@ -438,11 +471,20 @@ export async function getAllDistributors(req, res) {
 export async function getAllProducts(req, res) {
   try {
     const products = await Product.find()
-      .populate('business', 'displayName')
-      .select('name brand status currentTally tallyGoal isActive createdAt updatedAt')
+      .select('name brand status currentTally tallyGoal isActive business createdAt updatedAt')
       .sort({ createdAt: -1 })
       .limit(500)
-    res.json(products)
+
+    const profileIds = [...new Set(products.map(p => p.business?.toString()).filter(Boolean))]
+    const businesses = await Business.find({ profile: { $in: profileIds } }).select('profile displayName')
+    const bizByProfile = {}
+    businesses.forEach(b => { bizByProfile[b.profile.toString()] = b.displayName })
+
+    const result = products.map(p => ({
+      ...p.toObject(),
+      storeName: bizByProfile[p.business?.toString()] ?? null,
+    }))
+    res.json(result)
   } catch (err) {
     res.status(500).json({ err: err.message })
   }

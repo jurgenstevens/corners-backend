@@ -32,7 +32,7 @@ router.put('/users/:profileId/lift-ban', ctrl.liftBan)
 router.get('/businesses', ctrl.getAllBusinesses)
 router.get('/businesses/:id', ctrl.getBusinessDetail)
 router.put('/businesses/:id/revoke', ctrl.revokeBusiness)
-router.put('/businesses/:id/verify-authentic', ctrl.verifyAuthenticBusiness)
+router.put('/businesses/:id/reject-store', ctrl.rejectStore)
 
 router.get('/distributors', ctrl.getAllDistributors)
 

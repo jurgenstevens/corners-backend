@@ -30,9 +30,10 @@ const businessSchema = new Schema({
   isActive: { type: Boolean, default: true },
   verificationStatus: {
     type: String,
-    enum: ['pending', 'approved'],
+    enum: ['pending', 'approved', 'rejected'],
     default: 'pending',
   },
+  rejectedAt: { type: Date, default: null },
   verificationDocuments: [String],
   verificationNotes: String,
   isAuthentic: { type: Boolean, default: false },
