@@ -25,15 +25,20 @@ router.get('/products/tally-hits', ctrl.getProductsHittingTally)
 router.get('/products/expiring-rejected', ctrl.getRejectedProductsExpiring)
 router.get('/users/banned', ctrl.getBannedUsers)
 router.get('/users/patrons', ctrl.getAllPatrons)
+router.get('/users/patrons/:id', ctrl.getPatronDetail)
+router.delete('/users/patrons/:id', ctrl.deletePatron)
 router.put('/users/:profileId/lift-ban', ctrl.liftBan)
 
 router.get('/businesses', ctrl.getAllBusinesses)
 router.get('/businesses/:id', ctrl.getBusinessDetail)
 router.put('/businesses/:id/reject', ctrl.rejectBusiness)
+router.put('/businesses/:id/verify-authentic', ctrl.verifyAuthenticBusiness)
 
 router.get('/distributors', ctrl.getAllDistributors)
 
 router.get('/products', ctrl.getAllProducts)
+router.get('/products/:id', ctrl.getProductDetail)
+router.put('/products/:id/approve', ctrl.approveProduct)
 router.delete('/products/:id', ctrl.hardDeleteProduct)
 router.put('/products/:id/restore', ctrl.restoreProduct)
 

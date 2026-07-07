@@ -382,6 +382,48 @@ export async function getAllPatrons(req, res) {
   }
 }
 
+export async function getPatronDetail(req, res) {
+  try {
+    const patron = await Profile.findById(req.params.id)
+      .select('name email photo isBanned isSuspended suspendedUntil suspensionReason banReason bannedAt createdAt flags')
+    if (!patron) return res.status(404).json({ err: 'Patron not found' })
+    const [connections, votes, activeFlags] = await Promise.all([
+      Connection.find({ patron: patron._id })
+        .populate('business', 'displayName location businessType')
+        .sort('-createdAt')
+        .limit(50),
+      Product.find({ votedBy: patron._id })
+        .select('name brand status currentTally tallyGoal business')
+        .sort('-updatedAt')
+        .limit(50),
+      VoteAbuseFlag.find({ patron: patron._id, dismissed: false, reviewed: false })
+        .sort('-createdAt'),
+    ])
+    res.json({ patron, connections, votes, activeFlags })
+  } catch (err) {
+    res.status(500).json({ err: err.message })
+  }
+}
+
+export async function deletePatron(req, res) {
+  try {
+    const patron = await Profile.findById(req.params.id)
+    if (!patron) return res.status(404).json({ err: 'Patron not found' })
+    await Promise.all([
+      Connection.deleteMany({ patron: patron._id }),
+      Product.updateMany(
+        { votedBy: patron._id },
+        { $pull: { votedBy: patron._id }, $inc: { currentTally: -1 } }
+      ),
+      VoteAbuseFlag.deleteMany({ patron: patron._id }),
+    ])
+    await Profile.findByIdAndDelete(patron._id)
+    res.json({ message: 'Patron deleted' })
+  } catch (err) {
+    res.status(500).json({ err: err.message })
+  }
+}
+
 export async function getAllDistributors(req, res) {
   try {
     const distributors = await Profile.find({ authorizationLevel: 500 })
@@ -401,6 +443,48 @@ export async function getAllProducts(req, res) {
       .sort({ createdAt: -1 })
       .limit(500)
     res.json(products)
+  } catch (err) {
+    res.status(500).json({ err: err.message })
+  }
+}
+
+export async function getProductDetail(req, res) {
+  try {
+    const product = await Product.findById(req.params.id)
+      .populate('votedBy', 'name email photo')
+      .populate('requestedBy', 'name email')
+    if (!product) return res.status(404).json({ err: 'Product not found' })
+    const business = await Business.findOne({ profile: product.business })
+      .select('_id displayName businessType location')
+    res.json({ product, business })
+  } catch (err) {
+    res.status(500).json({ err: err.message })
+  }
+}
+
+export async function approveProduct(req, res) {
+  try {
+    const product = await Product.findByIdAndUpdate(
+      req.params.id,
+      { status: 'approved' },
+      { new: true }
+    )
+    if (!product) return res.status(404).json({ err: 'Product not found' })
+    res.json(product)
+  } catch (err) {
+    res.status(500).json({ err: err.message })
+  }
+}
+
+export async function verifyAuthenticBusiness(req, res) {
+  try {
+    const business = await Business.findByIdAndUpdate(
+      req.params.id,
+      { isAuthentic: true },
+      { new: true }
+    )
+    if (!business) return res.status(404).json({ err: 'Business not found' })
+    res.json(business)
   } catch (err) {
     res.status(500).json({ err: err.message })
   }
