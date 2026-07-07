@@ -47,7 +47,7 @@ export async function signup(req, res) {
   try {
     if (!process.env.SECRET) throw new Error('no SECRET in back-end .env')
 
-    const { name, email, password, zip, city, state, businessType, visibility } = req.body
+    const { name, email, password, zip, city, state, businessType, visibility, ownerName } = req.body
     const role = normalizeRole(req.body.role)
 
     const authorizationLevel = ROLE_TO_AUTH_LEVEL[role]
@@ -56,7 +56,8 @@ export async function signup(req, res) {
     const existingUser = await User.findOne({ email })
     if (existingUser) throw new Error('Account already exists')
 
-    const newProfile = await Profile.create({ name, email, authorizationLevel })
+    const profileName = authorizationLevel === AUTH_LEVELS.BUSINESS && ownerName ? ownerName.trim() : name
+    const newProfile = await Profile.create({ name: profileName, email, authorizationLevel })
     const newUser = await User.create({ email, password, profile: newProfile._id })
 
     if (authorizationLevel === AUTH_LEVELS.BUSINESS) {
