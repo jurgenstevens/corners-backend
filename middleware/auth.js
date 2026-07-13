@@ -6,7 +6,7 @@ export function decodeUserFromToken(req, res, next) {
   if (!token) return next()
   token = token.replace('Bearer ', '')
   jwt.verify(token, process.env.SECRET, (err, decoded) => {
-    if (err) return next(err)
+    if (err) return next()
     req.user = decoded
     next()
   })

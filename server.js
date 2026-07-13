@@ -18,6 +18,7 @@ import ordersRouter from './routes/orders.js'
 import adminRouter from './routes/admin.js'
 import bugReportsRouter from './routes/bugReports.js'
 import messagesRouter from './routes/messages.js'
+import uploadsRouter from './routes/uploads.js'
 import { decodeUserFromToken, checkNotBanned } from './middleware/auth.js'
 import { startCleanupJobs } from './jobs/cleanupRejectedProducts.js'
 
@@ -27,6 +28,7 @@ app.disable('x-powered-by')
 app.use(cors())
 app.use(logger('dev'))
 app.use(express.json())
+app.use('/api/uploads', uploadsRouter)
 app.use(formData.parse())
 
 app.use('/api/auth', authRouter)
