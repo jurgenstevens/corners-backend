@@ -1,4 +1,5 @@
 import BugReport from '../models/bugReport.js'
+import { generateSlug } from '../utils/generateSlug.js'
 import VoteAbuseFlag from '../models/voteAbuseFlag.js'
 import { Profile } from '../models/profile.js'
 import Connection from '../models/connection.js'
@@ -133,12 +134,20 @@ export async function flagUser(req, res) {
 export async function verifyBusiness(req, res) {
   try {
     const { notes } = req.body
-    const business = await Business.findByIdAndUpdate(
-      req.params.businessId ?? req.params.id,
-      { verificationStatus: 'approved', verificationNotes: notes },
-      { new: true }
-    )
+    const business = await Business.findById(req.params.businessId ?? req.params.id)
     if (!business) return res.status(404).json({ err: 'Business not found' })
+
+    business.verificationStatus = 'approved'
+    if (notes) business.verificationNotes = notes
+
+    if (!business.slug) {
+      let slug = generateSlug(business.displayName || business.businessType || 'store')
+      const collision = await Business.findOne({ slug, _id: { $ne: business._id } })
+      if (collision) slug = slug + '-' + Math.random().toString(36).slice(2, 6)
+      business.slug = slug
+    }
+
+    await business.save()
     res.json(business)
   } catch (err) {
     res.status(500).json({ err: err.message })

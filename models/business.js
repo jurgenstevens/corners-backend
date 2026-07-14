@@ -37,6 +37,7 @@ const businessSchema = new Schema({
   verificationDocuments: [String],
   verificationNotes: String,
   isAuthentic: { type: Boolean, default: false },
+  slug: { type: String, unique: true, sparse: true, trim: true },
 }, { timestamps: true })
 
 export default mongoose.model('Business', businessSchema)
