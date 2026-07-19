@@ -6,6 +6,7 @@ import Connection from '../models/connection.js'
 import Business from '../models/business.js'
 import Product from '../models/product.js'
 import UserModel from '../models/user.js'
+import Patron from '../models/patron.js'
 const { User } = UserModel
 
 export async function getBugReports(req, res) {
@@ -429,7 +430,7 @@ export async function getPatronDetail(req, res) {
     const patron = await Profile.findById(req.params.id)
       .select('name email photo isBanned isSuspended suspendedUntil suspensionReason banReason bannedAt createdAt flags')
     if (!patron) return res.status(404).json({ err: 'Patron not found' })
-    const [connections, votes, activeFlags] = await Promise.all([
+    const [connections, votes, activeFlags, productRequestsRaw, patronDoc] = await Promise.all([
       Connection.find({ patron: patron._id })
         .populate('business', 'displayName location businessType')
         .sort('-createdAt')
@@ -440,8 +441,28 @@ export async function getPatronDetail(req, res) {
         .limit(50),
       VoteAbuseFlag.find({ patron: patron._id, dismissed: false, reviewed: false })
         .sort('-createdAt'),
+      Product.find({ requestedBy: patron._id })
+        .select('name brand status currentTally tallyGoal business requestedBy createdAt')
+        .sort('-createdAt'),
+      Patron.findOne({ profile: patron._id }),
     ])
-    res.json({ patron, connections, votes, activeFlags })
+    const profileIds = [...new Set(productRequestsRaw.map(p => p.business?.toString()).filter(Boolean))]
+    let bizByProfile = {}
+    if (profileIds.length > 0) {
+      const businesses = await Business.find({ profile: { $in: profileIds } }).select('profile displayName')
+      businesses.forEach(b => { bizByProfile[b.profile.toString()] = b.displayName })
+    }
+    const productRequests = productRequestsRaw.map(p => ({
+      ...p.toObject(),
+      storeName: bizByProfile[p.business?.toString()] ?? null,
+    }))
+    res.json({
+      patron: { ...patron.toObject(), patron: patronDoc ? patronDoc.toObject() : null },
+      connections,
+      votes,
+      activeFlags,
+      productRequests,
+    })
   } catch (err) {
     res.status(500).json({ err: err.message })
   }
@@ -536,6 +557,51 @@ export async function verifyAuthenticBusiness(req, res) {
     )
     if (!business) return res.status(404).json({ err: 'Business not found' })
     res.json(business)
+  } catch (err) {
+    res.status(500).json({ err: err.message })
+  }
+}
+
+export async function adminUpdateUser(req, res) {
+  try {
+    const { name, email, zip, city, state } = req.body
+    const profile = await Profile.findById(req.params.profileId)
+    if (!profile) return res.status(404).json({ err: 'User not found' })
+
+    if (name) profile.name = name
+    if (email) {
+      const duplicate = await Profile.findOne({ email: email.toLowerCase(), _id: { $ne: profile._id } })
+      if (duplicate) return res.status(400).json({ err: 'Email already in use by another account' })
+      profile.email = email.toLowerCase()
+    }
+    await profile.save()
+
+    if (zip !== undefined || city !== undefined || state !== undefined) {
+      const patron = await Patron.findOne({ profile: profile._id })
+      if (patron) {
+        if (zip !== undefined) patron.location.zip = zip
+        if (city !== undefined) patron.location.city = city
+        if (state !== undefined) patron.location.state = state
+        await patron.save()
+      }
+    }
+
+    res.json({ success: true, profile })
+  } catch (err) {
+    res.status(500).json({ err: err.message })
+  }
+}
+
+export async function approveProductForStore(req, res) {
+  try {
+    const product = await Product.findById(req.params.id)
+    if (!product) return res.status(404).json({ err: 'Product not found' })
+    if (product.status !== 'pending' && product.status !== 'ready_to_stock') {
+      return res.status(400).json({ err: 'Only pending or ready_to_stock products can be approved this way' })
+    }
+    product.status = 'approved'
+    await product.save()
+    res.json(product)
   } catch (err) {
     res.status(500).json({ err: err.message })
   }

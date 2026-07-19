@@ -28,6 +28,7 @@ router.get('/users/patrons', ctrl.getAllPatrons)
 router.get('/users/patrons/:id', ctrl.getPatronDetail)
 router.delete('/users/patrons/:id', ctrl.deletePatron)
 router.put('/users/:profileId/lift-ban', ctrl.liftBan)
+router.put('/users/:profileId/update', ctrl.adminUpdateUser)
 
 router.get('/businesses', ctrl.getAllBusinesses)
 router.get('/businesses/:id', ctrl.getBusinessDetail)
@@ -41,5 +42,6 @@ router.get('/products/:id', ctrl.getProductDetail)
 router.put('/products/:id/approve', ctrl.approveProduct)
 router.delete('/products/:id', ctrl.hardDeleteProduct)
 router.put('/products/:id/restore', ctrl.restoreProduct)
+router.put('/products/:id/approve-for-store', ctrl.approveProductForStore)
 
 export default router
