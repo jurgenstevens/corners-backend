@@ -48,8 +48,8 @@ export async function createCheckout(req, res) {
 
 export async function getStatus(req, res) {
   try {
-    // TODO: look up subscription status from DB or Stripe by req.user.profileId
-    res.json({ active: false, plan: null })
+    // TODO: look up real subscription from Stripe/DB by req.user.profileId
+    res.json({ status: 'active', plan: null, trialEndsAt: null, currentPeriodEnd: null, paymentFailedAt: null })
   } catch (err) {
     res.status(500).json({ err: err.message })
   }
