@@ -2,9 +2,12 @@ import jwt from 'jsonwebtoken'
 import { Profile } from '../models/profile.js'
 
 export function decodeUserFromToken(req, res, next) {
-  let token = req.get('Authorization') || req.query.token || req.body.token
-  if (!token) return next()
-  token = token.replace('Bearer ', '')
+  const authHeader = req.headers.authorization
+  if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    req.user = null
+    return next()
+  }
+  const token = authHeader.split(' ')[1]
   jwt.verify(token, process.env.SECRET, (err, decoded) => {
     if (err) return next()
     req.user = decoded
