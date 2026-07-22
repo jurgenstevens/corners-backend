@@ -592,6 +592,24 @@ export async function adminUpdateUser(req, res) {
   }
 }
 
+export async function createBoost(req, res) {
+  console.log('createBoost called with body:', req.body)
+  try {
+    const product = await Product.findById(req.body.productId)
+    if (!product) return res.status(404).json({ err: 'Product not found' })
+    const { boostPlan, boostStartsAt, boostEndsAt } = req.body
+    product.boosted = true
+    product.boostPlan = boostPlan
+    product.boostStartsAt = boostStartsAt ? new Date(boostStartsAt) : new Date()
+    product.boostEndsAt = boostEndsAt ? new Date(boostEndsAt) : null
+    product.boostPausedAt = null
+    await product.save()
+    res.json(product)
+  } catch (err) {
+    res.status(500).json({ err: err.message })
+  }
+}
+
 export async function approveProductForStore(req, res) {
   try {
     const product = await Product.findById(req.params.id)

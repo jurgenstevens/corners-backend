@@ -20,6 +20,11 @@ const productSchema = new Schema({
   discountPercent: { type: Number },
   requestedBy: { type: Schema.Types.ObjectId, ref: 'Profile' },
   isActive: { type: Boolean, default: true },
+  boosted: { type: Boolean, default: false },
+  boostPlan: { type: String },
+  boostStartsAt: { type: Date },
+  boostEndsAt: { type: Date },
+  boostPausedAt: { type: Date },
 }, { timestamps: true })
 
 export default mongoose.model('Product', productSchema)
