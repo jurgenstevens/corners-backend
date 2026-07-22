@@ -36,7 +36,40 @@ export async function indexForPatron(req, res) {
       ],
     }).populate('business', 'name photo').sort('-createdAt')
 
-    res.json(products)
+    const now = new Date()
+    const sponsored = await Product.find({
+      boosted: true,
+      boostStartsAt: { $lte: now },
+      boostEndsAt: { $gte: now },
+      $or: [{ boostPausedAt: null }, { boostPausedAt: { $exists: false } }],
+      status: { $in: ['stocked', 'on_sale'] },
+      isActive: true,
+    })
+    .populate('business', 'name photo displayName')
+    .limit(5)
+    .lean()
+
+    const sponsoredTagged = sponsored.map(p => ({ ...p, _sponsored: true }))
+
+    const organicPlain = products.map(p =>
+      typeof p.toObject === 'function' ? p.toObject() : p
+    )
+
+    const merged = []
+    let si = 0
+    for (let i = 0; i < organicPlain.length; i++) {
+      merged.push(organicPlain[i])
+      if ((i + 1) % 5 === 0 && si < sponsoredTagged.length) {
+        merged.push(sponsoredTagged[si])
+        si++
+      }
+    }
+    while (si < sponsoredTagged.length) {
+      merged.push(sponsoredTagged[si])
+      si++
+    }
+
+    return res.json(merged)
   } catch (err) {
     res.status(500).json({ err: err.message })
   }

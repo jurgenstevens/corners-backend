@@ -610,6 +610,71 @@ export async function createBoost(req, res) {
   }
 }
 
+export async function getBoosts(req, res) {
+  try {
+    const boosts = await Product.find({ boosted: true })
+      .populate('business', 'name photo displayName')
+      .sort({ boostStartsAt: 1 })
+    res.json(boosts)
+  } catch (err) {
+    res.status(500).json({ err: err.message })
+  }
+}
+
+export async function updateBoost(req, res) {
+  try {
+    const product = await Product.findById(req.params.productId)
+    if (!product) return res.status(404).json({ err: 'Product not found' })
+    const { boostStartsAt, boostEndsAt, boostPlan } = req.body
+    if (boostStartsAt) product.boostStartsAt = new Date(boostStartsAt)
+    if (boostEndsAt) product.boostEndsAt = new Date(boostEndsAt)
+    if (boostPlan) product.boostPlan = boostPlan
+    await product.save()
+    res.json(product)
+  } catch (err) {
+    res.status(500).json({ err: err.message })
+  }
+}
+
+export async function pauseBoost(req, res) {
+  try {
+    const product = await Product.findById(req.params.productId)
+    if (!product) return res.status(404).json({ err: 'Product not found' })
+    product.boostPausedAt = new Date()
+    await product.save()
+    res.json(product)
+  } catch (err) {
+    res.status(500).json({ err: err.message })
+  }
+}
+
+export async function resumeBoost(req, res) {
+  try {
+    const product = await Product.findById(req.params.productId)
+    if (!product) return res.status(404).json({ err: 'Product not found' })
+    product.boostPausedAt = null
+    await product.save()
+    res.json(product)
+  } catch (err) {
+    res.status(500).json({ err: err.message })
+  }
+}
+
+export async function cancelBoost(req, res) {
+  try {
+    const product = await Product.findById(req.params.productId)
+    if (!product) return res.status(404).json({ err: 'Product not found' })
+    product.boosted = false
+    product.boostStartsAt = null
+    product.boostEndsAt = null
+    product.boostPausedAt = null
+    await product.save()
+    res.json(product)
+  } catch (err) {
+    res.status(500).json({ err: err.message })
+  }
+}
+
 export async function approveProductForStore(req, res) {
   try {
     const product = await Product.findById(req.params.id)

@@ -44,5 +44,10 @@ router.delete('/products/:id', ctrl.hardDeleteProduct)
 router.put('/products/:id/restore', ctrl.restoreProduct)
 router.put('/products/:id/approve-for-store', ctrl.approveProductForStore)
 router.post('/boosts', ctrl.createBoost)
+router.get('/boosts', ctrl.getBoosts)
+router.put('/boosts/:productId', ctrl.updateBoost)
+router.put('/boosts/:productId/pause', ctrl.pauseBoost)
+router.put('/boosts/:productId/resume', ctrl.resumeBoost)
+router.delete('/boosts/:productId', ctrl.cancelBoost)
 
 export default router
