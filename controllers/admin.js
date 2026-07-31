@@ -7,6 +7,7 @@ import Business from '../models/business.js'
 import Product from '../models/product.js'
 import UserModel from '../models/user.js'
 import Patron from '../models/patron.js'
+import Billing from '../models/billing.js'
 const { User } = UserModel
 
 export async function getBugReports(req, res) {
@@ -149,6 +150,27 @@ export async function verifyBusiness(req, res) {
     }
 
     await business.save()
+
+    const existingBilling = await Billing.findOne({ profileId: business.profile })
+    if (!existingBilling || !['active', 'trialing'].includes(existingBilling.subscriptionStatus)) {
+      const FIRST_N_FREE = parseInt(process.env.FIRST_N_BUSINESSES_FREE || '5')
+      const FIRST_N_DAYS  = parseInt(process.env.FIRST_N_TRIAL_DAYS    || '90')
+      const DEFAULT_DAYS  = parseInt(process.env.DEFAULT_TRIAL_DAYS    || '30')
+
+      const approvedCount = await Business.countDocuments({
+        verificationStatus: 'approved',
+        _id: { $ne: business._id },
+      })
+      const trialDays  = approvedCount < FIRST_N_FREE ? FIRST_N_DAYS : DEFAULT_DAYS
+      const trialEndsAt = new Date(Date.now() + trialDays * 86400000)
+
+      await Billing.findOneAndUpdate(
+        { profileId: business.profile },
+        { profileId: business.profile, plan: 'business', subscriptionStatus: 'trialing', trialEndsAt },
+        { upsert: true, new: true }
+      )
+    }
+
     res.json(business)
   } catch (err) {
     res.status(500).json({ err: err.message })
