@@ -64,8 +64,8 @@ export async function createCheckout(req, res) {
     const priceId = process.env.STRIPE_BUSINESS_PRICE_ID
 
     const billing = await Billing.findOne({ profileId })
-    if (billing?.subscriptionStatus === 'active') {
-      return res.status(400).json({ err: 'Already subscribed' })
+    if (billing?.stripeSubscriptionId && ['trialing', 'active'].includes(billing.subscriptionStatus)) {
+      return res.status(400).json({ err: 'Payment method already on file' })
     }
 
     let customerId = billing?.stripeCustomerId
@@ -86,8 +86,8 @@ export async function createCheckout(req, res) {
       mode: 'subscription',
       payment_method_types: ['card'],
       line_items: [{ price: priceId, quantity: 1 }],
-      success_url: `${process.env.CLIENT_URL}/billing/success?session_id={CHECKOUT_SESSION_ID}`,
-      cancel_url: `${process.env.CLIENT_URL}/billing/cancel`,
+      success_url: `${process.env.CLIENT_URL}/dashboard/business?billing=success`,
+      cancel_url: `${process.env.CLIENT_URL}/dashboard/business?billing=cancel`,
       metadata: { profileId },
     }
     sessionParams.customer = customerId
@@ -114,6 +114,7 @@ export async function getStatus(req, res) {
       trialEndsAt: billing?.trialEndsAt || null,
       currentPeriodEnd: billing?.currentPeriodEnd || null,
       paymentFailedAt: billing?.paymentFailedAt || null,
+      hasPaymentMethod: !!billing?.stripeSubscriptionId,
     })
   } catch (err) {
     res.status(500).json({ err: err.message })
