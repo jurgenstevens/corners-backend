@@ -138,6 +138,7 @@ export async function verifyBusiness(req, res) {
     const { notes } = req.body
     const business = await Business.findById(req.params.businessId ?? req.params.id)
     if (!business) return res.status(404).json({ err: 'Business not found' })
+    console.log('[approval] business:', business?._id?.toString())
 
     business.verificationStatus = 'approved'
     if (notes) business.verificationNotes = notes
@@ -164,11 +165,12 @@ export async function verifyBusiness(req, res) {
       const trialDays  = approvedCount < FIRST_N_FREE ? FIRST_N_DAYS : DEFAULT_DAYS
       const trialEndsAt = new Date(Date.now() + trialDays * 86400000)
 
-      await Billing.findOneAndUpdate(
+      const billingDoc = await Billing.findOneAndUpdate(
         { profileId: business.profile },
         { profileId: business.profile, plan: 'business', subscriptionStatus: 'trialing', trialEndsAt },
         { upsert: true, new: true }
       )
+      console.log('[approval] billing upserted:', billingDoc?.subscriptionStatus, billingDoc?.trialEndsAt)
     }
 
     res.json(business)
