@@ -1,3 +1,4 @@
+import Stripe from 'stripe'
 import BugReport from '../models/bugReport.js'
 import { generateSlug } from '../utils/generateSlug.js'
 import VoteAbuseFlag from '../models/voteAbuseFlag.js'
@@ -9,6 +10,7 @@ import UserModel from '../models/user.js'
 import Patron from '../models/patron.js'
 import Billing from '../models/billing.js'
 const { User } = UserModel
+const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 
 export async function getBugReports(req, res) {
   try {
@@ -179,6 +181,46 @@ export async function verifyBusiness(req, res) {
   }
 }
 
+export async function extendTrial(req, res) {
+  try {
+    const { days } = req.body
+    if (![30, 60, 90].includes(Number(days))) {
+      return res.status(400).json({ err: 'days must be 30, 60, or 90' })
+    }
+
+    const business = await Business.findById(req.params.businessId)
+    if (!business) return res.status(404).json({ err: 'Business not found' })
+
+    const billing = await Billing.findOne({ profileId: business.profile })
+    if (!billing) return res.status(404).json({ err: 'Billing record not found' })
+
+    const base = billing.trialEndsAt && billing.trialEndsAt > new Date() ? billing.trialEndsAt : new Date()
+    const newTrialEnd = new Date(base.getTime() + Number(days) * 86400000)
+
+    const updated = await Billing.findOneAndUpdate(
+      { profileId: business.profile },
+      { subscriptionStatus: 'trialing', trialEndsAt: newTrialEnd, paymentFailedAt: null },
+      { new: true }
+    )
+
+    let stripeSyncError = null
+    if (billing.stripeSubscriptionId) {
+      try {
+        await stripe.subscriptions.update(billing.stripeSubscriptionId, {
+          trial_end: Math.floor(newTrialEnd.getTime() / 1000),
+          proration_behavior: 'none',
+        })
+      } catch (stripeErr) {
+        stripeSyncError = stripeErr.message
+      }
+    }
+
+    res.json({ billing: updated, ...(stripeSyncError ? { stripeSyncError } : {}) })
+  } catch (err) {
+    res.status(500).json({ err: err.message })
+  }
+}
+
 export async function revokeBusiness(req, res) {
   try {
     const business = await Business.findByIdAndUpdate(
@@ -343,12 +385,13 @@ export async function getBusinessDetail(req, res) {
     const business = await Business.findById(req.params.id)
       .populate('profile', 'name email photo authorizationLevel createdAt isBanned isSuspended suspendedUntil')
     if (!business) return res.status(404).json({ err: 'Business not found' })
-    const [connectionStats, productCount, tallyCount] = await Promise.all([
+    const [connectionStats, productCount, tallyCount, billing] = await Promise.all([
       Connection.aggregate([{ $match: { business: business._id } }, { $group: { _id: '$status', count: { $sum: 1 } } }]),
       Product.countDocuments({ business: business.profile._id, isActive: true }),
       Product.countDocuments({ business: business.profile._id, status: { $in: ['ready_to_stock', 'stocked'] } }),
+      Billing.findOne({ profileId: business.profile }),
     ])
-    res.json({ business, connectionStats, productCount, tallyCount })
+    res.json({ business, connectionStats, productCount, tallyCount, billing })
   } catch (err) {
     res.status(500).json({ err: err.message })
   }
