@@ -44,9 +44,12 @@ export async function handleWebhook(req, res) {
         )
         break
       case 'invoice.payment_succeeded':
+        // Don't touch subscriptionStatus — customer.subscription.updated owns that.
+        // A $0 trial invoice fires this immediately after checkout and would
+        // overwrite "trialing" → "active" if we set status here.
         await Billing.findOneAndUpdate(
           { stripeCustomerId: event.data.object.customer },
-          { subscriptionStatus: 'active', paymentFailedAt: null },
+          { paymentFailedAt: null },
         )
         break
       default:
