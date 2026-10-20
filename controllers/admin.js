@@ -591,6 +591,55 @@ export async function getAllDistributors(req, res) {
   }
 }
 
+export async function createProduct(req, res) {
+  try {
+    const { name, brand, description, price, image, business, tallyGoal, status, salePrice, discountPercent, isActive, boosted } = req.body
+    if (!name?.trim())   return res.status(400).json({ err: 'name is required' })
+    if (!business)       return res.status(400).json({ err: 'business is required' })
+    const product = await Product.create({
+      name: name.trim(),
+      brand:           brand           || undefined,
+      description:     description     || undefined,
+      price:           price    !== '' && price    != null ? Number(price)           : undefined,
+      salePrice:       salePrice!== '' && salePrice!= null ? Number(salePrice)       : undefined,
+      discountPercent: discountPercent !== '' && discountPercent != null ? Number(discountPercent) : undefined,
+      image:           image           || undefined,
+      business,
+      tallyGoal:       tallyGoal != null && tallyGoal !== '' ? Number(tallyGoal) : 10,
+      status:          status || 'pending',
+      isActive:        isActive !== undefined ? isActive : true,
+      boosted:         boosted  || false,
+    })
+    res.status(201).json(product)
+  } catch (err) {
+    res.status(500).json({ err: err.message })
+  }
+}
+
+export async function updateProduct(req, res) {
+  try {
+    const { name, brand, description, price, image, tallyGoal, status, salePrice, discountPercent, isActive, boosted } = req.body
+    const $set = {}
+    if (name            !== undefined) $set.name            = name
+    if (brand           !== undefined) $set.brand           = brand
+    if (description     !== undefined) $set.description     = description
+    if (image           !== undefined) $set.image           = image
+    if (status          !== undefined) $set.status          = status
+    if (isActive        !== undefined) $set.isActive        = isActive
+    if (boosted         !== undefined) $set.boosted         = boosted
+    if (tallyGoal       !== undefined) $set.tallyGoal       = Number(tallyGoal)
+    if (price           !== undefined) $set.price           = price !== '' ? Number(price) : null
+    if (salePrice       !== undefined) $set.salePrice       = salePrice !== '' ? Number(salePrice) : null
+    if (discountPercent !== undefined) $set.discountPercent = discountPercent !== '' ? Number(discountPercent) : null
+
+    const product = await Product.findByIdAndUpdate(req.params.id, { $set }, { new: true, runValidators: true })
+    if (!product) return res.status(404).json({ err: 'Product not found' })
+    res.json(product)
+  } catch (err) {
+    res.status(500).json({ err: err.message })
+  }
+}
+
 export async function getAllProducts(req, res) {
   try {
     const products = await Product.find()
