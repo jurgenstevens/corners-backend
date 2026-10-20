@@ -32,6 +32,7 @@ router.put('/users/:profileId/update', ctrl.adminUpdateUser)
 
 router.get('/businesses', ctrl.getAllBusinesses)
 router.get('/businesses/:id', ctrl.getBusinessDetail)
+router.put('/businesses/:id/info', ctrl.updateStoreInfo)
 router.put('/businesses/:id/revoke', ctrl.revokeBusiness)
 router.put('/businesses/:id/reject-store', ctrl.rejectStore)
 router.put('/businesses/:businessId/extend-trial', ctrl.extendTrial)

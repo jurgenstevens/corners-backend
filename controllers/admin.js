@@ -221,6 +221,32 @@ export async function extendTrial(req, res) {
   }
 }
 
+export async function updateStoreInfo(req, res) {
+  try {
+    const { displayName, businessType, phone, address, description, city, state, zip } = req.body
+    const $set = {}
+    if (displayName  !== undefined) $set.displayName  = displayName
+    if (businessType !== undefined) $set.businessType = businessType
+    if (phone        !== undefined) $set.phone        = phone
+    if (address      !== undefined) $set.address      = address
+    if (description  !== undefined) $set.description  = description
+    if (city         !== undefined) $set['location.city']  = city
+    if (state        !== undefined) $set['location.state'] = state
+    if (zip          !== undefined) $set['location.zip']   = zip
+
+    const business = await Business.findByIdAndUpdate(
+      req.params.id,
+      { $set },
+      { new: true, runValidators: true }
+    ).populate('profile', 'name email photo')
+
+    if (!business) return res.status(404).json({ err: 'Business not found' })
+    res.json(business)
+  } catch (err) {
+    res.status(500).json({ err: err.message })
+  }
+}
+
 export async function revokeBusiness(req, res) {
   try {
     const business = await Business.findByIdAndUpdate(
