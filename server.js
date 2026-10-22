@@ -1,5 +1,6 @@
 import 'dotenv/config.js'
 import express from 'express'
+import helmet from 'helmet'
 import logger from 'morgan'
 import cors from 'cors'
 import formData from 'express-form-data'
@@ -25,6 +26,18 @@ import { startCleanupJobs } from './jobs/cleanupRejectedProducts.js'
 
 const app = express()
 app.disable('x-powered-by')
+// Render sits behind a proxy; needed so express-rate-limit sees real client IPs.
+app.set('trust proxy', 1)
+
+app.use(helmet({
+  contentSecurityPolicy: {
+    directives: {
+      ...helmet.contentSecurityPolicy.getDefaultDirectives(),
+      'img-src': ["'self'", 'data:', 'https://res.cloudinary.com'],
+    },
+  },
+  crossOriginResourcePolicy: { policy: 'cross-origin' },
+}))
 
 app.use(cors())
 app.use(logger('dev'))

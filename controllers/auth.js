@@ -89,9 +89,9 @@ export async function login(req, res) {
   try {
     if (!process.env.SECRET) throw new Error('no SECRET in back-end .env')
     const user = await User.findOne({ email: req.body.email }).populate('profile')
-    if (!user) throw new Error('User not found')
+    if (!user) return res.status(401).json({ err: 'Invalid email or password' })
     const isMatch = await user.comparePassword(req.body.password)
-    if (!isMatch) throw new Error('Incorrect password')
+    if (!isMatch) return res.status(401).json({ err: 'Invalid email or password' })
     const token = createJWT(user)
     res.json({ token })
   } catch (err) {

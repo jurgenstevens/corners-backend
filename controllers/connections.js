@@ -8,17 +8,13 @@ const NEARBY_RADIUS_MILES = 5
 
 export async function nearby(req, res) {
   try {
-    console.log('nearby — req.user:', req.user)
     const patron = await Patron.findOne({ profile: req.user.profileId })
     if (!patron) return res.status(404).json({ err: 'Patron profile not found' })
-    console.log('nearby — patron zip:', patron.location?.zip)
 
     const searchZip = req.query.zip || patron.location?.zip || ''
-    console.log('nearby — req.query.zip:', req.query.zip, '| searchZip used:', searchZip)
     if (!searchZip) return res.json([])
 
     const nearbyZips = zipcodes.radius(searchZip, NEARBY_RADIUS_MILES) || [searchZip]
-    console.log('nearby — nearbyZips count:', nearbyZips.length, '| sample:', nearbyZips.slice(0, 10))
 
     const existing = await Connection.find({ patron: req.user.profileId }).select('business')
     const connectedIds = existing.map(c => c.business)
@@ -28,9 +24,8 @@ export async function nearby(req, res) {
       'location.zip': { $in: nearbyZips },
       _id: { $nin: [...connectedIds, ...dismissedIds] },
       isActive: true,
+      verificationStatus: 'approved',
     }).populate('profile', 'name photo')
-
-    console.log('nearby — businesses found:', businesses.length)
 
     // attach driving distance in miles from the search zip to each business so the
     // frontend can offer a "Sort: Nearby" option without an extra round-trip
@@ -42,7 +37,7 @@ export async function nearby(req, res) {
     withDistance.sort((a, b) => (a.distance ?? Infinity) - (b.distance ?? Infinity))
     res.json(withDistance)
   } catch (err) {
-    console.log('nearby — ERROR:', err.message)
+    console.error('nearby — ERROR:', err.message)
     res.status(500).json({ err: err.message })
   }
 }
@@ -51,7 +46,7 @@ export async function requestConnection(req, res) {
   try {
     const { businessId } = req.params
     const business = await Business.findById(businessId)
-    if (!business) return res.status(404).json({ err: 'Business not found' })
+    if (!business || business.verificationStatus !== 'approved') return res.status(404).json({ err: 'Business not found' })
 
     const existing = await Connection.findOne({ patron: req.user.profileId, business: businessId })
     if (existing) return res.status(400).json({ err: 'Connection already exists' })
@@ -160,16 +155,14 @@ export async function updateStatus(req, res) {
 
 export async function getMyStores(req, res) {
   try {
-    console.log('getMyStores — profileId:', req.user.profileId)
     const patron = await Patron.findOne({ profile: req.user.profileId }).populate({
       path: 'businesses',
       populate: { path: 'profile', select: 'name photo' },
     })
     if (!patron) return res.status(404).json({ err: 'Patron not found' })
-    console.log('getMyStores — stores found:', patron.businesses.length)
     res.json(patron.businesses)
   } catch (err) {
-    console.log('getMyStores — ERROR:', err.message)
+    console.error('getMyStores — ERROR:', err.message)
     res.status(500).json({ err: err.message })
   }
 }
@@ -210,7 +203,6 @@ export async function deleteConnection(req, res) {
 export async function disconnect(req, res) {
   try {
     const { businessId } = req.params
-    console.log('disconnect — patron:', req.user.profileId, '| businessId:', businessId)
 
     const conn = await Connection.findOneAndDelete({ patron: req.user.profileId, business: businessId })
     if (!conn) return res.status(404).json({ err: 'Connection not found' })
@@ -220,10 +212,9 @@ export async function disconnect(req, res) {
       { $pull: { businesses: businessId } }
     )
 
-    console.log('disconnect — removed connection and updated patron businesses')
     res.json({ message: 'Disconnected successfully' })
   } catch (err) {
-    console.log('disconnect — ERROR:', err.message)
+    console.error('disconnect — ERROR:', err.message)
     res.status(500).json({ err: err.message })
   }
 }

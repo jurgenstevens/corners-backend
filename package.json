@@ -4,7 +4,9 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "start": "node ./bin/www.js"
+    "start": "node ./bin/www.js",
+    "dev": "nodemon bin/www.js",
+    "migrate:verified": "node scripts/migrateVerifiedToApproved.js"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^0.104.2",
@@ -14,6 +16,8 @@
     "dotenv": "^16.4.5",
     "express": "^4.19.2",
     "express-form-data": "^2.0.23",
+    "express-rate-limit": "^8.7.1",
+    "helmet": "^8.3.0",
     "jsonwebtoken": "^9.0.2",
     "mongoose": "^8.3.3",
     "morgan": "^1.10.0",

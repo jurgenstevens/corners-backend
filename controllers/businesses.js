@@ -9,6 +9,9 @@ export async function show(req, res) {
     if (!business) return res.status(404).json({ err: 'Business not found' })
 
     const isSelf = business.profile._id.toString() === req.user.profileId.toString()
+    if (!isSelf && business.verificationStatus !== 'approved') {
+      return res.status(404).json({ err: 'Business not found' })
+    }
     if (!isSelf) {
       const conn = await Connection.findOne({ patron: req.user.profileId, business: id, status: 'approved' })
       if (!conn) return res.status(403).json({ err: 'Not connected to this business' })
@@ -41,7 +44,7 @@ export async function setup(req, res) {
 export async function joinBySlug(req, res) {
   try {
     const business = await Business.findOne({ slug: req.params.slug }).populate('profile', 'name photo')
-    if (!business) return res.status(404).json({ err: 'Store not found' })
+    if (!business || business.verificationStatus !== 'approved') return res.status(404).json({ err: 'Store not found' })
     res.json({ business, profile: business.profile })
   } catch (err) {
     res.status(500).json({ err: err.message })
