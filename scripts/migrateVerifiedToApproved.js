@@ -5,7 +5,7 @@ import { generateSlug } from '../utils/generateSlug.js'
 
 const apply = process.argv.includes('--apply')
 
-await mongoose.connect(process.env.MONGODB_URI)
+await mongoose.connect(process.env.DATABASE_URL)
 
 const businesses = await Business.find({ verificationStatus: 'verified' }).lean()
 
