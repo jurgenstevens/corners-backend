@@ -41,7 +41,7 @@ export async function setup(req, res) {
 export async function joinBySlug(req, res) {
   try {
     const business = await Business.findOne({ slug: req.params.slug }).populate('profile', 'name photo')
-    if (!business) return res.status(404).json({ err: 'Store not found' })
+    if (!business || business.verificationStatus !== 'approved') return res.status(404).json({ err: 'Store not found' })
     res.json({ business, profile: business.profile })
   } catch (err) {
     res.status(500).json({ err: err.message })

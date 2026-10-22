@@ -28,6 +28,7 @@ export async function nearby(req, res) {
       'location.zip': { $in: nearbyZips },
       _id: { $nin: [...connectedIds, ...dismissedIds] },
       isActive: true,
+      verificationStatus: 'approved',
     }).populate('profile', 'name photo')
 
     console.log('nearby — businesses found:', businesses.length)
@@ -51,7 +52,7 @@ export async function requestConnection(req, res) {
   try {
     const { businessId } = req.params
     const business = await Business.findById(businessId)
-    if (!business) return res.status(404).json({ err: 'Business not found' })
+    if (!business || business.verificationStatus !== 'approved') return res.status(404).json({ err: 'Business not found' })
 
     const existing = await Connection.findOne({ patron: req.user.profileId, business: businessId })
     if (existing) return res.status(400).json({ err: 'Connection already exists' })
