@@ -9,6 +9,9 @@ export async function show(req, res) {
     if (!business) return res.status(404).json({ err: 'Business not found' })
 
     const isSelf = business.profile._id.toString() === req.user.profileId.toString()
+    if (!isSelf && business.verificationStatus !== 'approved') {
+      return res.status(404).json({ err: 'Business not found' })
+    }
     if (!isSelf) {
       const conn = await Connection.findOne({ patron: req.user.profileId, business: id, status: 'approved' })
       if (!conn) return res.status(403).json({ err: 'Not connected to this business' })
