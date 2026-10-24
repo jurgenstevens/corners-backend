@@ -1,21 +1,22 @@
 import { Router } from 'express'
 import * as ctrl from '../controllers/products.js'
 import { decodeUserFromToken, checkBusiness, checkPatron } from '../middleware/auth.js'
+import { requireActiveSubscription } from '../middleware/requireActiveSubscription.js'
 
 const router = Router()
 
 router.get('/patron', decodeUserFromToken, checkPatron, ctrl.indexForPatron)
 router.get('/patron/promotions', decodeUserFromToken, checkPatron, ctrl.indexPromotionsForPatron)
 router.get('/by-business/:businessId', decodeUserFromToken, checkPatron, ctrl.indexForPatronByBusiness)
-router.get('/', decodeUserFromToken, checkBusiness, ctrl.index)
-router.post('/', decodeUserFromToken, checkBusiness, ctrl.create)
+router.get('/', decodeUserFromToken, checkBusiness, requireActiveSubscription, ctrl.index)
+router.post('/', decodeUserFromToken, checkBusiness, requireActiveSubscription, ctrl.create)
 router.post('/request/:businessId', decodeUserFromToken, checkPatron, ctrl.requestProduct)
 router.post('/:id/vote', decodeUserFromToken, checkPatron, ctrl.vote)
-router.post('/:id/request-info', decodeUserFromToken, checkBusiness, ctrl.requestInfo)
-router.post('/:id/promote', decodeUserFromToken, checkBusiness, ctrl.promoteProduct)
-router.put('/:id/status', decodeUserFromToken, checkBusiness, ctrl.updateStatus)
+router.post('/:id/request-info', decodeUserFromToken, checkBusiness, requireActiveSubscription, ctrl.requestInfo)
+router.post('/:id/promote', decodeUserFromToken, checkBusiness, requireActiveSubscription, ctrl.promoteProduct)
+router.put('/:id/status', decodeUserFromToken, checkBusiness, requireActiveSubscription, ctrl.updateStatus)
 router.put('/:id/patron-update', decodeUserFromToken, checkPatron, ctrl.patronUpdate)
-router.put('/:id', decodeUserFromToken, checkBusiness, ctrl.update)
-router.delete('/:id', decodeUserFromToken, checkBusiness, ctrl.destroy)
+router.put('/:id', decodeUserFromToken, checkBusiness, requireActiveSubscription, ctrl.update)
+router.delete('/:id', decodeUserFromToken, checkBusiness, requireActiveSubscription, ctrl.destroy)
 
 export default router
