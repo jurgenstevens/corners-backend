@@ -6,7 +6,7 @@ const billingSchema = new Schema({
   plan: { type: String, default: 'business' },
   subscriptionStatus: {
     type: String,
-    enum: ['none', 'trialing', 'active', 'past_due', 'canceled', 'incomplete'],
+    enum: ['none', 'trialing', 'active', 'past_due', 'canceled', 'incomplete', 'expired'],
     default: 'none',
   },
   trialEndsAt: { type: Date, default: null },

@@ -23,6 +23,7 @@ import uploadsRouter from './routes/uploads.js'
 import billingRouter from './routes/billing.js'
 import { decodeUserFromToken, checkNotBanned } from './middleware/auth.js'
 import { startCleanupJobs } from './jobs/cleanupRejectedProducts.js'
+import { startBillingJobs } from './jobs/expireTrials.js'
 
 const app = express()
 app.disable('x-powered-by')
@@ -60,6 +61,7 @@ app.use('/api/bug-reports', decodeUserFromToken, checkNotBanned, bugReportsRoute
 app.use('/api/messages', messagesRouter)
 
 startCleanupJobs()
+startBillingJobs()
 
 app.use(function (req, res, next) {
   res.status(404).json({ err: 'Not found' })

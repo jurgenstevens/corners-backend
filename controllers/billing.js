@@ -1,5 +1,7 @@
 import Stripe from 'stripe'
 import Billing from '../models/billing.js'
+import Business from '../models/business.js'
+import { getEffectiveStatus, isEntitled } from '../services/entitlement.js'
 
 const stripe = new Stripe(process.env.STRIPE_SECRET_KEY)
 
@@ -111,8 +113,19 @@ export async function createCheckout(req, res) {
 export async function getStatus(req, res) {
   try {
     const billing = await Billing.findOne({ profileId: req.user.profileId })
+
+    let business = null
+    if (!billing) {
+      business = await Business.findOne({ profile: req.user.profileId }).select('verificationStatus')
+    }
+
+    const { status, graceEndsAt } = getEffectiveStatus(billing)
+    const entitled = isEntitled({ billing, business })
+
     res.json({
-      status: billing?.subscriptionStatus || 'none',
+      status,
+      graceEndsAt: graceEndsAt || null,
+      entitled,
       plan: billing?.plan || null,
       trialEndsAt: billing?.trialEndsAt || null,
       currentPeriodEnd: billing?.currentPeriodEnd || null,
